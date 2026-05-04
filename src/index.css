@@ -1,0 +1,44 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Amiri:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Amiri", serif;
+  
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-500: #64748b;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  
+  --color-whatsapp-bg: #e5ddd5;
+  --color-whatsapp-header: #075e54;
+  --color-whatsapp-bubble: #dcf8c6;
+}
+
+@layer base {
+  html {
+    direction: rtl;
+    font-family: var(--font-sans);
+    background-color: var(--color-slate-50);
+    color: var(--color-slate-800);
+  }
+}
+
+.spiritual-card {
+  @apply bg-white rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden;
+}
+
+.arabic-text {
+  font-family: var(--font-serif);
+}
+
+.english-text {
+  font-family: var(--font-sans);
+  direction: ltr;
+}
