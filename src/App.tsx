@@ -46,7 +46,15 @@ export default function App() {
     }
 
     const studentsQuery = query(collection(db, 'students'));
-    const unsubscribeStudents = onSnapshot(studentsQuery, (snapshot) => {
+    const unsubscribeStudents = onSnapshot(studentsQuery, async (snapshot) => {
+      // If students collection is empty, seed it with the initial students list
+      if (snapshot.empty) {
+        console.log('No students found, seeding Firestore with initial students...');
+        for (const student of INITIAL_STUDENTS) {
+          await addDoc(collection(db, 'students'), { name: student.name });
+        }
+        return; // The onSnapshot will fire again after seeding
+      }
       const studentsData: Student[] = [];
       snapshot.forEach((doc) => {
         studentsData.push({ id: doc.id, ...doc.data() } as Student);
