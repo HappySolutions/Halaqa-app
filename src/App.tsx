@@ -13,71 +13,159 @@ import { format } from 'date-fns';
 import { Settings, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
+import { db } from './lib/firebase';
+import { 
+  collection, 
+  onSnapshot, 
+  addDoc, 
+  deleteDoc, 
+  doc, 
+  updateDoc,
+  query,
+  orderBy,
+  serverTimestamp,
+  Timestamp
+} from 'firebase/firestore';
 
 export default function App() {
   const [view, setView] = useState<'student' | 'admin'>('student');
   const [showSettings, setShowSettings] = useState(false);
   
   // Data State
-  const [students, setStudents] = useState<Student[]>(() => {
-    const saved = localStorage.getItem('quran_students');
-    const parsed = saved ? JSON.parse(saved) : [];
-    // If we have no students or just the old test students, force the new INITIAL_STUDENTS
-    if (parsed.length === 0 || (parsed.length === 5 && parsed[0].name === 'خديجة محمد')) {
-      return INITIAL_STUDENTS;
+  const [students, setStudents] = useState<Student[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load Data from Firebase
+  useEffect(() => {
+    // Check if Firebase is configured
+    if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) {
+      console.warn('Firebase is not configured. Falling back to local state (read-only for demo).');
+      setStudents(INITIAL_STUDENTS);
+      setLoading(false);
+      return;
     }
-    return parsed;
-  });
 
-  const [reports, setReports] = useState<Report[]>(() => {
-    const saved = localStorage.getItem('quran_reports');
-    return saved ? JSON.parse(saved) : [];
-  });
+    const studentsQuery = query(collection(db, 'students'));
+    const unsubscribeStudents = onSnapshot(studentsQuery, (snapshot) => {
+      const studentsData: Student[] = [];
+      snapshot.forEach((doc) => {
+        studentsData.push({ id: doc.id, ...doc.data() } as Student);
+      });
+      setStudents(studentsData);
+    }, (error) => {
+      console.error("Error fetching students:", error);
+    });
 
-  // Persist Data
-  useEffect(() => {
-    localStorage.setItem('quran_students', JSON.stringify(students));
-  }, [students]);
+    const reportsQuery = query(collection(db, 'reports'), orderBy('timestamp', 'desc'));
+    const unsubscribeReports = onSnapshot(reportsQuery, (snapshot) => {
+      const reportsData: Report[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        reportsData.push({
+          ...data,
+          id: doc.id,
+          // Handle both Firestore Timestamp and regular numbers
+          timestamp: data.timestamp?.toMillis ? data.timestamp.toMillis() : data.timestamp
+        } as Report);
+      });
+      setReports(reportsData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching reports:", error);
+      setLoading(false);
+    });
 
-  useEffect(() => {
-    localStorage.setItem('quran_reports', JSON.stringify(reports));
-  }, [reports]);
-
-  const handleAddReport = (reportData: Omit<Report, 'id' | 'timestamp' | 'date' | 'isDeferred'>) => {
-    const newReport: Report = {
-      ...reportData,
-      id: crypto.randomUUID(),
-      timestamp: Date.now(),
-      date: format(new Date(), 'yyyy-MM-dd'),
-      isDeferred: false,
+    return () => {
+      unsubscribeStudents();
+      unsubscribeReports();
     };
-    setReports(prev => [newReport, ...prev]);
+  }, []);
+
+  const handleAddReport = async (reportData: Omit<Report, 'id' | 'timestamp' | 'date' | 'isDeferred'>) => {
+    if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
+    
+    // Set expiration date for TTL (e.g., 7 days from now)
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    try {
+      await addDoc(collection(db, 'reports'), {
+        ...reportData,
+        timestamp: serverTimestamp(),
+        date: format(new Date(), 'yyyy-MM-dd'),
+        isDeferred: false,
+        expiresAt: Timestamp.fromDate(expiresAt) // For Firebase TTL
+      });
+    } catch (error) {
+      console.error("Error adding report: ", error);
+      alert("حدث خطأ أثناء إرسال التقرير");
+    }
   };
 
-  const handleDeleteReport = (id: string) => {
-    setReports(prev => prev.filter(r => r.id !== id));
+  const handleDeleteReport = async (id: string) => {
+    if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
+    try {
+      await deleteDoc(doc(db, 'reports', id));
+    } catch (error) {
+      console.error("Error deleting report: ", error);
+    }
   };
 
-  const handleToggleDeferred = (id: string) => {
-    setReports(prev => prev.map(r => r.id === id ? { ...r, isDeferred: !r.isDeferred } : r));
+  const handleToggleDeferred = async (id: string) => {
+    if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
+    const report = reports.find(r => r.id === id);
+    if (!report) return;
+
+    try {
+      await updateDoc(doc(db, 'reports', id), {
+        isDeferred: !report.isDeferred
+      });
+    } catch (error) {
+      console.error("Error updating report: ", error);
+    }
   };
 
-  const handleClearToday = () => {
+  const handleClearToday = async () => {
+    if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
     const today = format(new Date(), 'yyyy-MM-dd');
-    setReports(prev => prev.filter(r => r.date !== today));
+    const todayReports = reports.filter(r => r.date === today);
+    
+    // Delete all reports for today
+    for (const report of todayReports) {
+      try {
+        await deleteDoc(doc(db, 'reports', report.id));
+      } catch (error) {
+        console.error("Error clearing report: ", error);
+      }
+    }
   };
 
-  const handleAddStudent = (name: string) => {
-    const newStudent: Student = {
-      id: crypto.randomUUID(),
-      name,
-    };
-    setStudents(prev => [...prev, newStudent]);
+  const handleAddStudent = async (name: string) => {
+    if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
+    try {
+      await addDoc(collection(db, 'students'), { name });
+    } catch (error) {
+      console.error("Error adding student: ", error);
+    }
   };
 
-  const handleRemoveStudent = (id: string) => {
-    setStudents(prev => prev.filter(s => s.id !== id));
+  const handleRemoveStudent = async (id: string) => {
+    if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
+    try {
+      await deleteDoc(doc(db, 'students', id));
+    } catch (error) {
+      console.error("Error deleting student: ", error);
+    }
   };
+
+  if (loading && import.meta.env.VITE_FIREBASE_PROJECT_ID) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 selection:bg-emerald-600 selection:text-white">
