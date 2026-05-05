@@ -22,9 +22,7 @@ import {
   doc, 
   updateDoc,
   query,
-  orderBy,
   serverTimestamp,
-  where,
   getDocs
 } from 'firebase/firestore';
 
@@ -58,33 +56,34 @@ export default function App() {
       console.error("Error fetching students:", error);
     });
 
-    // Auto-cleanup: delete reports older than 7 days on app load
+    // Auto-cleanup: delete reports older than 7 days (client-side filtering, no index needed)
     const cleanupOldReports = async () => {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const cutoffDate = format(sevenDaysAgo, 'yyyy-MM-dd');
-      const oldReportsQuery = query(
-        collection(db, 'reports'),
-        where('date', '<', cutoffDate)
-      );
-      const snapshot = await getDocs(oldReportsQuery);
-      snapshot.forEach(async (document) => {
-        await deleteDoc(doc(db, 'reports', document.id));
+      const allReportsSnapshot = await getDocs(collection(db, 'reports'));
+      allReportsSnapshot.forEach(async (document) => {
+        const data = document.data();
+        if (data.date && data.date < cutoffDate) {
+          await deleteDoc(doc(db, 'reports', document.id));
+        }
       });
     };
     cleanupOldReports();
 
-    const reportsQuery = query(collection(db, 'reports'), orderBy('timestamp', 'desc'));
-    const unsubscribeReports = onSnapshot(reportsQuery, (snapshot) => {
+    // Simple query with no ordering (sort client-side to avoid needing a composite index)
+    const unsubscribeReports = onSnapshot(query(collection(db, 'reports')), (snapshot) => {
       const reportsData: Report[] = [];
       snapshot.forEach((document) => {
         const data = document.data();
         reportsData.push({
           ...data,
           id: document.id,
-          timestamp: data.timestamp?.toMillis ? data.timestamp.toMillis() : data.timestamp
+          timestamp: data.timestamp?.toMillis ? data.timestamp.toMillis() : (data.timestamp ?? 0)
         } as Report);
       });
+      // Sort newest first client-side
+      reportsData.sort((a, b) => b.timestamp - a.timestamp);
       setReports(reportsData);
       setLoading(false);
     }, (error) => {
