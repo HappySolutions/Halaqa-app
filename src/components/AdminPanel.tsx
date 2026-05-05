@@ -38,22 +38,17 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
     const year = format(todayDate, 'yyyy');
     const dayNum = format(todayDate, 'dd');
     
-    // Hijri Date Approximation using Intl
-    const hijriFormatter = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-uma', {
+    // Hijri Date using Intl
+    const hijriFormatter = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', {
       day: 'numeric',
       month: 'long',
       year: 'numeric'
     });
-    const hijriParts = hijriFormatter.formatToParts(todayDate);
-    const hijriDay = hijriParts.find(p => p.type === 'day')?.value;
-    const hijriMonth = hijriParts.find(p => p.type === 'month')?.value;
-    const hijriYear = hijriParts.find(p => p.type === 'year')?.value;
+    const formattedHijri = hijriFormatter.format(todayDate);
 
-    let text = `${dayName}\n`;
-    text += `${hijriMonth}\n`;
-    text += `${hijriYear}-${hijriMonth}-${hijriDay}\n`;
-    text += `${monthName}\n`;
-    text += `${year}-${format(todayDate, 'MM')}-${dayNum}\n`;
+    let text = `يوم ${dayName}\n`;
+    text += `التاريخ الهجري: ${formattedHijri}\n`;
+    text += `التاريخ الميلادي: ${dayNum} ${monthName} ${year}م\n`;
     text += `.....................\n`;
     text += `عدد الحضور:${todayReports.length}\n`;
     text += `أوجه المراجعة:${stats.totalPages}\n`;
