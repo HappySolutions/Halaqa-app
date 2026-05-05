@@ -24,7 +24,8 @@ import {
   query,
   orderBy,
   serverTimestamp,
-  Timestamp
+  where,
+  getDocs
 } from 'firebase/firestore';
 
 export default function App() {
@@ -57,15 +58,30 @@ export default function App() {
       console.error("Error fetching students:", error);
     });
 
+    // Auto-cleanup: delete reports older than 7 days on app load
+    const cleanupOldReports = async () => {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const cutoffDate = format(sevenDaysAgo, 'yyyy-MM-dd');
+      const oldReportsQuery = query(
+        collection(db, 'reports'),
+        where('date', '<', cutoffDate)
+      );
+      const snapshot = await getDocs(oldReportsQuery);
+      snapshot.forEach(async (document) => {
+        await deleteDoc(doc(db, 'reports', document.id));
+      });
+    };
+    cleanupOldReports();
+
     const reportsQuery = query(collection(db, 'reports'), orderBy('timestamp', 'desc'));
     const unsubscribeReports = onSnapshot(reportsQuery, (snapshot) => {
       const reportsData: Report[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
+      snapshot.forEach((document) => {
+        const data = document.data();
         reportsData.push({
           ...data,
-          id: doc.id,
-          // Handle both Firestore Timestamp and regular numbers
+          id: document.id,
           timestamp: data.timestamp?.toMillis ? data.timestamp.toMillis() : data.timestamp
         } as Report);
       });
@@ -84,10 +100,6 @@ export default function App() {
 
   const handleAddReport = async (reportData: Omit<Report, 'id' | 'timestamp' | 'date' | 'isDeferred'>) => {
     if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
-    
-    // Set expiration date for TTL (e.g., 7 days from now)
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
 
     try {
       await addDoc(collection(db, 'reports'), {
@@ -95,7 +107,6 @@ export default function App() {
         timestamp: serverTimestamp(),
         date: format(new Date(), 'yyyy-MM-dd'),
         isDeferred: false,
-        expiresAt: Timestamp.fromDate(expiresAt) // For Firebase TTL
       });
     } catch (error) {
       console.error("Error adding report: ", error);
