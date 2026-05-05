@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 
 interface StudentFormProps {
   students: Student[];
-  onSubmit: (report: Omit<Report, 'id' | 'timestamp' | 'date'>) => void;
+  onSubmit: (report: Omit<Report, 'id' | 'timestamp' | 'date' | 'isDeferred'>) => void;
 }
 
 export function StudentForm({ students, onSubmit }: StudentFormProps) {

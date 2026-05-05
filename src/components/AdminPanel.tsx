@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Clipboard, Share2, Trash2, Users, Check, Send } from 'lucide-react';
+import { Clipboard, Trash2, Users, Check } from 'lucide-react';
 import { Report, Student } from '@/types';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
