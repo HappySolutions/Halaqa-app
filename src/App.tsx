@@ -189,7 +189,7 @@ export default function App() {
     <div className="min-h-screen flex flex-col bg-slate-50 selection:bg-emerald-600 selection:text-white">
       <Header view={view} setView={setView} />
       
-      <main className="flex-grow py-8 px-4 overflow-x-hidden">
+      <main className="flex-grow py-8 px-4">
         <AnimatePresence mode="wait">
           {view === 'student' ? (
             <motion.div
