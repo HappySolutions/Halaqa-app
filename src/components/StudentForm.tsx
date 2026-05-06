@@ -52,9 +52,19 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
     return reports.some(r => r.studentId === studentId && r.date === today);
   }, [studentId, reports]);
 
+  const isTimeRestricted = useMemo(() => {
+    // Saudi Arabia is GMT+3
+    const now = new Date();
+    const utcHours = now.getUTCHours();
+    const ksaHours = (utcHours + 3) % 24;
+    
+    // Restriction: 19:00 (7 PM) to 22:00 (10 PM)
+    return ksaHours >= 19 && ksaHours < 22;
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!studentId || isDuplicate) return;
+    if (!studentId || isDuplicate || isTimeRestricted) return;
     if (!isAbsent && !surahs) return;
 
     onSubmit({
@@ -82,7 +92,26 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
   return (
     <div className="max-w-xl mx-auto p-4 sm:p-6">
       <AnimatePresence mode="wait">
-        {submitted ? (
+        {isTimeRestricted ? (
+          <motion.div
+            key="restricted"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="spiritual-card p-12 text-center border-amber-100 bg-amber-50/30"
+          >
+            <div className="w-20 h-20 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <AlertCircle className="w-10 h-10" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">التسجيل مغلق الآن</h2>
+            <p className="text-slate-500 leading-relaxed">
+              عذراً، لا يمكن استقبال البطاقات في الوقت الحالي.<br/>
+              فترة التوقف اليومية: من <span className="font-bold">7:00 مساءً</span> حتى <span className="font-bold">10:00 مساءً</span> بتوقيت مكة المكرمة.
+            </p>
+            <div className="mt-8 p-4 bg-white rounded-xl border border-amber-100 text-xs text-amber-700 italic">
+              نسعد باستقبال بطاقاتكنّ خارج هذه الفترة.
+            </div>
+          </motion.div>
+        ) : submitted ? (
           <motion.div
             key="success"
             initial={{ opacity: 0, scale: 0.9 }}
@@ -308,16 +337,16 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
             <div className="pt-4">
               <button
                 type="submit"
-                disabled={!studentId || isDuplicate}
+                disabled={!studentId || isDuplicate || isTimeRestricted}
                 className={cn(
                   "w-full text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 group",
-                  isDuplicate ? "bg-slate-300 cursor-not-allowed shadow-none" : (isAbsent ? "bg-red-600 hover:bg-red-700 shadow-red-100" : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100")
+                  (isDuplicate || isTimeRestricted) ? "bg-slate-300 cursor-not-allowed shadow-none" : (isAbsent ? "bg-red-600 hover:bg-red-700 shadow-red-100" : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100")
                 )}
               >
                 <span>
                   {isDuplicate ? 'تم التسجيل مسبقاً' : (isAbsent ? 'تسجيل الغياب' : 'إرسال وتحديث الجدول')}
                 </span>
-                {!isDuplicate && <Send className="w-4 h-4 group-hover:translate-x-[-4px] transition-transform" />}
+                {!isDuplicate && !isTimeRestricted && <Send className="w-4 h-4 group-hover:translate-x-[-4px] transition-transform" />}
               </button>
               <p className="text-[10px] text-center text-slate-400 mt-4 leading-relaxed">
                 سيتم إرسال نسخة تلقائية إلى جروب الواتساب الخاص بالمعلمة
