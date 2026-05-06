@@ -54,19 +54,14 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
 
   const isTimeRestricted = useMemo(() => {
     try {
-      // Get current hour in KSA (Asia/Riyadh)
-      const ksaTime = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'Asia/Riyadh',
-        hour: 'numeric',
-        hour12: false
-      }).format(new Date());
-      
-      const ksaHours = parseInt(ksaTime);
+      // Create a date string for KSA timezone and parse it
+      const ksaString = new Date().toLocaleString("en-US", { timeZone: "Asia/Riyadh" });
+      const ksaDate = new Date(ksaString);
+      const ksaHours = ksaDate.getHours();
       
       // Restriction: 19:00 (7 PM) to 22:00 (10 PM)
       return ksaHours >= 19 && ksaHours < 22;
     } catch (e) {
-      // Fallback to manual UTC+3 if Intl fails
       const now = new Date();
       const utcHours = now.getUTCHours();
       const ksaHours = (utcHours + 3) % 24;
