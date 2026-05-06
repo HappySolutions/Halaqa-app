@@ -23,11 +23,12 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
 
   const stats = useMemo(() => {
     const total = students.length;
-    const completed = todayReports.filter(r => r.hasReviewed).length;
+    const presentReports = todayReports.filter(r => !r.isAbsent);
+    const completed = presentReports.filter(r => r.hasReviewed).length;
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-    const totalPages = todayReports.reduce((sum, r) => sum + r.pagesReviewed, 0);
+    const totalPages = presentReports.reduce((sum, r) => sum + r.pagesReviewed, 0);
 
-    return { total, completed, percentage, totalPages };
+    return { total, completed, percentage, totalPages, presentCount: presentReports.length };
   }, [students, todayReports]);
 
   const generateWhatsAppText = () => {
@@ -46,26 +47,37 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
     });
     const formattedHijri = hijriFormatter.format(todayDate);
 
+    const presentReports = todayReports.filter(r => !r.isAbsent);
+    const absentReports = todayReports.filter(r => r.isAbsent);
+
     let text = `يوم ${dayName}\n`;
     text += `التاريخ الهجري: ${formattedHijri}\n`;
     text += `التاريخ الميلادي: ${dayNum} ${monthName} ${year}م\n`;
     text += `.....................\n`;
-    text += `عدد الحضور:${todayReports.length}\n`;
+    text += `عدد الحضور:${stats.presentCount}\n`;
     text += `أوجه المراجعة:${stats.totalPages}\n`;
     text += `🖋️ حضور الطالبات حسب بطاقة:\n`;
 
-    if (todayReports.length === 0) {
-      text += "لا يوجد تقارير مسجلة لليوم بعد.";
+    if (presentReports.length === 0) {
+      text += "لا يوجد تقارير مسجلة لليوم بعد.\n";
     } else {
-      todayReports.forEach((r, index) => {
+      presentReports.forEach((r, index) => {
         const checkMark = r.hasReviewed ? '☑️' : '❌';
         const deferredMark = r.isDeferred ? '↩️' : '';
         text += `${index + 1}-${r.studentName}${r.pagesReviewed}${r.surahs}${checkMark}${deferredMark}\n`;
       });
     }
 
-    text += `\nالطالبة الغائبة بعذر📝\n1-\n2-\n3-\n`;
-    text += `علامة ☑️ تعني أن الطالبة راجعت\n`;
+    text += `\nالطالبة الغائبة بعذر📝\n`;
+    if (absentReports.length === 0) {
+      text += "1-\n2-\n3-\n";
+    } else {
+      absentReports.forEach((r, index) => {
+        text += `${index + 1}-${r.studentName} (${r.absenceReason || 'بدون عذر'})\n`;
+      });
+    }
+    
+    text += `\nعلامة ☑️ تعني أن الطالبة راجعت\n`;
     text += `علامة ↩️ تعني أن الطالبة لم يتسع وقت الحلقة لتسميعها وتم ترحيلها الى اليوم التالي`;
     
     return text;
@@ -122,10 +134,16 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <div className={cn("w-1.5 h-1.5 rounded-full", report.hasReviewed ? "bg-emerald-500" : "bg-slate-300")} />
+                    <div className={cn(
+                      "w-1.5 h-1.5 rounded-full", 
+                      report.isAbsent ? "bg-red-500" : (report.hasReviewed ? "bg-emerald-500" : "bg-slate-300")
+                    )} />
                     <span className="font-bold text-slate-800 text-sm">{report.studentName}</span>
+                    {report.isAbsent && <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-md font-bold">غائبة</span>}
                   </div>
-                  <div className="text-[11px] text-slate-500 mr-3.5 italic">{report.surahs}</div>
+                  <div className="text-[11px] text-slate-500 mr-3.5 italic">
+                    {report.isAbsent ? (report.absenceReason || 'لا يوجد عذر') : report.surahs}
+                  </div>
                 </div>
                 
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">

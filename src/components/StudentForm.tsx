@@ -16,6 +16,8 @@ export function StudentForm({ students, onSubmit }: StudentFormProps) {
   const [pages, setPages] = useState<number>(1);
   const [surahs, setSurahs] = useState('');
   const [hasReviewed, setHasReviewed] = useState(true);
+  const [isAbsent, setIsAbsent] = useState(false);
+  const [absenceReason, setAbsenceReason] = useState('');
   const [submitted, setSubmitted] = useState(false);
   
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -44,14 +46,17 @@ export function StudentForm({ students, onSubmit }: StudentFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!studentId || !surahs) return;
+    if (!studentId) return;
+    if (!isAbsent && !surahs) return;
 
     onSubmit({
       studentId,
       studentName: selectedStudent?.name || '',
-      pagesReviewed: pages,
-      surahs,
-      hasReviewed,
+      pagesReviewed: isAbsent ? 0 : pages,
+      surahs: isAbsent ? 'غائبة' : surahs,
+      hasReviewed: isAbsent ? false : hasReviewed,
+      isAbsent,
+      absenceReason: isAbsent ? absenceReason : '',
     });
 
     setSubmitted(true);
@@ -61,6 +66,8 @@ export function StudentForm({ students, onSubmit }: StudentFormProps) {
       setSearchTerm('');
       setPages(1);
       setSurahs('');
+      setIsAbsent(false);
+      setAbsenceReason('');
     }, 3000);
   };
 
@@ -78,8 +85,8 @@ export function StudentForm({ students, onSubmit }: StudentFormProps) {
             <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
               <Check className="w-10 h-10" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">تم الإرسال بنجاح!</h2>
-            <p className="text-slate-500">بارك الله في جهودكِ ونفع بكِ.</p>
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">تم التسجيل بنجاح!</h2>
+            <p className="text-slate-500">بارك الله في جهودكِ.</p>
           </motion.div>
         ) : (
           <motion.form
@@ -90,8 +97,8 @@ export function StudentForm({ students, onSubmit }: StudentFormProps) {
             className="spiritual-card p-8 sm:p-10 space-y-6"
           >
             <div className="border-b border-slate-100 pb-6 text-center">
-              <h2 className="text-xl font-bold text-slate-800">تسجيل المراجعة</h2>
-              <p className="text-sm text-slate-500 mt-1">يرجى إدخال بيانات الورد اليومي بدقة</p>
+              <h2 className="text-xl font-bold text-slate-800">تسجيل الحالة اليومية</h2>
+              <p className="text-sm text-slate-500 mt-1">يرجى اختيار الاسم وتحديد حالة الحضور</p>
             </div>
 
             {/* Name Selector (Searchable) */}
@@ -176,60 +183,112 @@ export function StudentForm({ students, onSubmit }: StudentFormProps) {
               <input type="hidden" required value={studentId} />
             </div>
 
-            {/* Surahs Input */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700">السورة / السور</label>
-              <input
-                type="text"
-                required
-                placeholder="مثال: البقرة (١-٥٠)"
-                value={surahs}
-                onChange={(e) => setSurahs(e.target.value)}
-                className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-              />
+            {/* Absence Toggle */}
+            <div 
+              onClick={() => setIsAbsent(!isAbsent)}
+              className={cn(
+                "w-full h-12 flex items-center gap-3 rounded-xl px-4 cursor-pointer transition-all border",
+                isAbsent ? "bg-red-50 border-red-200 text-red-700" : "bg-slate-50 border-slate-200 text-slate-500"
+              )}
+            >
+              <div className={cn(
+                "w-5 h-5 rounded-md border flex items-center justify-center transition-all",
+                isAbsent ? "bg-red-600 border-red-600 text-white" : "border-slate-300"
+              )}>
+                {isAbsent && <Check className="w-3 h-3" />}
+              </div>
+              <span className="text-sm font-bold">الطالبة غائبة اليوم</span>
             </div>
 
-            {/* Pages & Status */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">عدد أوجه المراجعة</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  required
-                  value={pages}
-                  onChange={(e) => setPages(parseFloat(e.target.value))}
-                  className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">مراجعة</label>
-                <div
-                  onClick={() => setHasReviewed(!hasReviewed)}
-                  className={cn(
-                    "w-full h-12 flex items-center gap-2 rounded-xl px-4 cursor-pointer transition-all border",
-                    hasReviewed ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-slate-50 border-slate-200 text-slate-400"
-                  )}
+            <AnimatePresence mode="wait">
+              {isAbsent ? (
+                <motion.div
+                  key="absence-fields"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-4 overflow-hidden"
                 >
-                  <div className={cn(
-                    "w-4 h-4 rounded border flex items-center justify-center transition-all",
-                    hasReviewed ? "bg-emerald-600 border-emerald-600 text-white" : "border-slate-300"
-                  )}>
-                    {hasReviewed && <Check className="w-3 h-3" />}
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">سبب الغياب</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="مثال: إجازة، عذر طبي، سفر..."
+                      value={absenceReason}
+                      onChange={(e) => setAbsenceReason(e.target.value)}
+                      className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-800 focus:ring-2 focus:ring-red-500 outline-none transition-all"
+                    />
                   </div>
-                  <span className="text-sm font-medium">تمت المراجعة</span>
-                </div>
-              </div>
-            </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="review-fields"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-6 overflow-hidden"
+                >
+                  {/* Surahs Input */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">السورة / السور</label>
+                    <input
+                      type="text"
+                      required={!isAbsent}
+                      placeholder="مثال: البقرة (١-٥٠)"
+                      value={surahs}
+                      onChange={(e) => setSurahs(e.target.value)}
+                      className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                    />
+                  </div>
+
+                  {/* Pages & Status */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700">عدد أوجه المراجعة</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        required={!isAbsent}
+                        value={pages}
+                        onChange={(e) => setPages(parseFloat(e.target.value))}
+                        className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700">مراجعة</label>
+                      <div
+                        onClick={() => setHasReviewed(!hasReviewed)}
+                        className={cn(
+                          "w-full h-12 flex items-center gap-2 rounded-xl px-4 cursor-pointer transition-all border",
+                          hasReviewed ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-slate-50 border-slate-200 text-slate-400"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-4 h-4 rounded border flex items-center justify-center transition-all",
+                          hasReviewed ? "bg-emerald-600 border-emerald-600 text-white" : "border-slate-300"
+                        )}>
+                          {hasReviewed && <Check className="w-3 h-3" />}
+                        </div>
+                        <span className="text-sm font-medium">تمت المراجعة</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <div className="pt-4">
               <button
                 type="submit"
                 disabled={!studentId}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-emerald-100 flex items-center justify-center gap-2 group"
+                className={cn(
+                  "w-full text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 group",
+                  isAbsent ? "bg-red-600 hover:bg-red-700 shadow-red-100" : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100"
+                )}
               >
-                <span>إرسال وتحديث الجدول</span>
+                <span>{isAbsent ? 'تسجيل الغياب' : 'إرسال وتحديث الجدول'}</span>
                 <Send className="w-4 h-4 group-hover:translate-x-[-4px] transition-transform" />
               </button>
               <p className="text-[10px] text-center text-slate-400 mt-4 leading-relaxed">

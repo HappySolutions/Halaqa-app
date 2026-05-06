@@ -12,6 +12,8 @@ export interface Report {
   surahs: string;
   hasReviewed: boolean;
   isDeferred: boolean;
+  isAbsent: boolean;
+  absenceReason?: string;
   timestamp: number;
   date: string; // YYYY-MM-DD
 }
