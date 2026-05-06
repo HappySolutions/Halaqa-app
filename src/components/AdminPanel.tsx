@@ -56,9 +56,11 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
     text += `التاريخ الهجري: ${formattedHijri}\n`;
     text += `التاريخ الميلادي: ${dayNum} ${monthName} ${year}م\n`;
     text += `.....................\n`;
+    text += `الرقم الوظيفي: 3908\n`;
     text += `عدد الحضور:${stats.presentCount}\n`;
     text += `أوجه المراجعة:${stats.totalPages}\n`;
     text += `عدد أوجه الحفظ:${Math.floor(stats.presentCount / 2)}\n`;
+    text += `المعلمة: نور أحمد\n`;
     text += `🖋️ حضور الطالبات حسب بطاقة:\n`;
 
     if (presentReports.length === 0) {
