@@ -29,11 +29,35 @@ import {
 export default function App() {
   const [view, setView] = useState<'student' | 'admin'>('student');
   const [showSettings, setShowSettings] = useState(false);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
+    return localStorage.getItem('halaqa_admin_auth') === 'true';
+  });
+  const [adminPassword, setAdminPassword] = useState('');
+  const [passwordError, setPasswordError] = useState(false);
   
   // Data State
   const [students, setStudents] = useState<Student[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Handle Admin Login
+  const handleAdminLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (adminPassword === 'الحرم') {
+      setIsAdminAuthenticated(true);
+      localStorage.setItem('halaqa_admin_auth', 'true');
+      setPasswordError(false);
+    } else {
+      setPasswordError(true);
+      setTimeout(() => setPasswordError(false), 2000);
+    }
+  };
+
+  const handleAdminLogout = () => {
+    setIsAdminAuthenticated(false);
+    localStorage.removeItem('halaqa_admin_auth');
+    setView('student');
+  };
 
   // Load Data from Firebase
   useEffect(() => {
@@ -210,41 +234,93 @@ export default function App() {
               exit={{ opacity: 0, x: 20 }}
               className="space-y-8"
             >
-              <AdminPanel 
-                reports={reports} 
-                students={students} 
-                onDeleteReport={handleDeleteReport}
-                onToggleDeferred={handleToggleDeferred}
-                onClearAll={handleClearToday}
-              />
-              
-              <div className="max-w-4xl mx-auto px-4 sm:px-8">
-                <button
-                  onClick={() => setShowSettings(!showSettings)}
-                  className="flex items-center gap-2 text-slate-500 hover:text-emerald-600 font-bold transition-all text-sm"
-                >
-                  <Settings className={cn("w-4 h-4", showSettings ? "rotate-90 transition-transform" : "")} />
-                  <span>{showSettings ? 'إخفاء إدارة الأسماء' : 'إدارة قائمة الأسماء'}</span>
-                </button>
-                
-                {showSettings && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    className="overflow-hidden mt-4"
+              {!isAdminAuthenticated ? (
+                <div className="max-w-md mx-auto pt-12">
+                  <motion.form 
+                    onSubmit={handleAdminLogin}
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="spiritual-card p-8 space-y-6 text-center"
                   >
-                    <StudentManager 
-                      students={students} 
-                      onAdd={handleAddStudent} 
-                      onRemove={handleRemoveStudent} 
-                    />
-                  </motion.div>
-                )}
-              </div>
+                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Settings className="w-8 h-8 text-slate-400" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-800">منطقة الإشراف</h2>
+                      <p className="text-sm text-slate-500 mt-1">يرجى إدخال كلمة المرور للمتابعة</p>
+                    </div>
+                    <div className="space-y-2">
+                      <input 
+                        autoFocus
+                        type="password" 
+                        value={adminPassword}
+                        onChange={(e) => setAdminPassword(e.target.value)}
+                        placeholder="كلمة المرور..."
+                        className={cn(
+                          "w-full h-12 bg-slate-50 border rounded-xl px-4 text-center text-lg focus:ring-2 outline-none transition-all",
+                          passwordError ? "border-red-500 ring-red-100" : "border-slate-200 focus:ring-emerald-500/20 focus:border-emerald-500"
+                        )}
+                      />
+                      {passwordError && (
+                        <p className="text-xs text-red-500 font-bold">كلمة المرور غير صحيحة!</p>
+                      )}
+                    </div>
+                    <button 
+                      type="submit"
+                      className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl transition-all shadow-lg"
+                    >
+                      دخول الصلاحيات
+                    </button>
+                  </motion.form>
+                </div>
+              ) : (
+                <>
+                  <div className="max-w-6xl mx-auto flex justify-end px-4 sm:px-8">
+                    <button 
+                      onClick={handleAdminLogout}
+                      className="text-[10px] font-bold text-red-400 hover:text-red-600 transition-all uppercase tracking-widest"
+                    >
+                      تسجيل خروج المشرفة
+                    </button>
+                  </div>
+                  <AdminPanel 
+                    reports={reports} 
+                    students={students} 
+                    onDeleteReport={handleDeleteReport}
+                    onToggleDeferred={handleToggleDeferred}
+                    onClearAll={handleClearToday}
+                  />
+                  
+                  <div className="max-w-4xl mx-auto px-4 sm:px-8">
+                    <button
+                      onClick={() => setShowSettings(!showSettings)}
+                      className="flex items-center gap-2 text-slate-500 hover:text-emerald-600 font-bold transition-all text-sm"
+                    >
+                      <Settings className={cn("w-4 h-4", showSettings ? "rotate-90 transition-transform" : "")} />
+                      <span>{showSettings ? 'إخفاء إدارة الأسماء' : 'إدارة قائمة الأسماء'}</span>
+                    </button>
+                    
+                    {showSettings && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        className="overflow-hidden mt-4"
+                      >
+                        <StudentManager 
+                          students={students} 
+                          onAdd={handleAddStudent} 
+                          onRemove={handleRemoveStudent} 
+                        />
+                      </motion.div>
+                    )}
+                  </div>
+                </>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
       </main>
+
 
       <footer className="py-8 px-4 border-t border-slate-200 bg-white">
         <div className="max-w-4xl mx-auto text-center flex flex-col items-center gap-2">
