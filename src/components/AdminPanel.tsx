@@ -18,7 +18,9 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
   const today = format(new Date(), 'yyyy-MM-dd');
   
   const todayReports = useMemo(() => {
-    return reports.filter(r => r.date === today);
+    return reports
+      .filter(r => r.date === today)
+      .sort((a, b) => a.timestamp - b.timestamp); // Oldest first (first registered first)
   }, [reports, today]);
 
   const stats = useMemo(() => {
