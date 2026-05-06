@@ -53,13 +53,25 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
   }, [studentId, reports]);
 
   const isTimeRestricted = useMemo(() => {
-    // Saudi Arabia is GMT+3
-    const now = new Date();
-    const utcHours = now.getUTCHours();
-    const ksaHours = (utcHours + 3) % 24;
-    
-    // Restriction: 19:00 (7 PM) to 22:00 (10 PM)
-    return ksaHours >= 19 && ksaHours < 22;
+    try {
+      // Get current hour in KSA (Asia/Riyadh)
+      const ksaTime = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Riyadh',
+        hour: 'numeric',
+        hour12: false
+      }).format(new Date());
+      
+      const ksaHours = parseInt(ksaTime);
+      
+      // Restriction: 19:00 (7 PM) to 22:00 (10 PM)
+      return ksaHours >= 19 && ksaHours < 22;
+    } catch (e) {
+      // Fallback to manual UTC+3 if Intl fails
+      const now = new Date();
+      const utcHours = now.getUTCHours();
+      const ksaHours = (utcHours + 3) % 24;
+      return ksaHours >= 19 && ksaHours < 22;
+    }
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
