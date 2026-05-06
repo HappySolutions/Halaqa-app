@@ -218,7 +218,7 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
             {todayReports.length > 0 && (
               <div className="bg-whatsapp-bubble p-3 rounded-lg rounded-tl-none shadow-sm max-w-[85%] mr-auto relative">
                 <div className="text-[12px] text-slate-800">
-                  تم استلام بطاقة جديدة من: <span className="font-bold">{todayReports[0].studentName}</span> ✅
+                  تم استلام بطاقة جديدة من: <span className="font-bold">{todayReports[todayReports.length - 1].studentName}</span> ✅
                 </div>
                 <div className="text-[9px] text-slate-400 text-left mt-1">
                   {format(new Date(), 'hh:mm a')}
