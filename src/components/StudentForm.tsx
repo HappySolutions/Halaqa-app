@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Check, Send, User } from 'lucide-react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { Check, Send, User, Search, ChevronDown, X } from 'lucide-react';
 import { Student, Report } from '@/types';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -11,21 +11,44 @@ interface StudentFormProps {
 
 export function StudentForm({ students, onSubmit }: StudentFormProps) {
   const [studentId, setStudentId] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [pages, setPages] = useState<number>(1);
   const [surahs, setSurahs] = useState('');
   const [hasReviewed, setHasReviewed] = useState(true);
   const [submitted, setSubmitted] = useState(false);
+  
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredStudents = useMemo(() => {
+    if (!searchTerm) return students;
+    return students.filter(s => 
+      s.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [students, searchTerm]);
+
+  const selectedStudent = useMemo(() => 
+    students.find(s => s.id === studentId), 
+  [students, studentId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!studentId || !surahs) return;
 
-    const student = students.find(s => s.id === studentId);
-    if (!student) return;
-
     onSubmit({
       studentId,
-      studentName: student.name,
+      studentName: selectedStudent?.name || '',
       pagesReviewed: pages,
       surahs,
       hasReviewed,
@@ -35,6 +58,7 @@ export function StudentForm({ students, onSubmit }: StudentFormProps) {
     setTimeout(() => {
       setSubmitted(false);
       setStudentId('');
+      setSearchTerm('');
       setPages(1);
       setSurahs('');
     }, 3000);
@@ -70,27 +94,86 @@ export function StudentForm({ students, onSubmit }: StudentFormProps) {
               <p className="text-sm text-slate-500 mt-1">يرجى إدخال بيانات الورد اليومي بدقة</p>
             </div>
 
-            {/* Name Selector */}
-            <div className="space-y-2">
+            {/* Name Selector (Searchable) */}
+            <div className="space-y-2" ref={dropdownRef}>
               <label className="text-sm font-semibold text-slate-700">اسم الطالبة</label>
               <div className="relative">
-                <select
-                  required
-                  value={studentId}
-                  onChange={(e) => setStudentId(e.target.value)}
-                  className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none appearance-none transition-all"
+                <div 
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className={cn(
+                    "w-full h-12 bg-slate-50 border rounded-xl px-4 flex items-center justify-between cursor-pointer transition-all",
+                    isDropdownOpen ? "border-emerald-500 ring-2 ring-emerald-500/10" : "border-slate-200"
+                  )}
                 >
-                  <option value="">اختر الاسم من القائمة...</option>
-                  {students.map((student) => (
-                    <option key={student.id} value={student.id}>
-                      {student.name}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                  <User className="w-4 h-4" />
+                  <div className="flex items-center gap-3">
+                    <User className="w-4 h-4 text-slate-400" />
+                    <span className={cn("text-sm", !selectedStudent ? "text-slate-400" : "text-slate-800 font-medium")}>
+                      {selectedStudent ? selectedStudent.name : "ابحثي عن اسمكِ هنا..."}
+                    </span>
+                  </div>
+                  <ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform", isDropdownOpen && "rotate-180")} />
                 </div>
+
+                <AnimatePresence>
+                  {isDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden"
+                    >
+                      <div className="p-2 border-b border-slate-100 bg-slate-50">
+                        <div className="relative">
+                          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                          <input
+                            autoFocus
+                            type="text"
+                            placeholder="اكتبي الحرف الأول للبحث..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full h-10 pr-9 pl-8 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-emerald-500 transition-all"
+                          />
+                          {searchTerm && (
+                            <button 
+                              type="button"
+                              onClick={() => setSearchTerm('')}
+                              className="absolute left-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                        {filteredStudents.length > 0 ? (
+                          filteredStudents.map((student) => (
+                            <div
+                              key={student.id}
+                              onClick={() => {
+                                setStudentId(student.id);
+                                setIsDropdownOpen(false);
+                                setSearchTerm('');
+                              }}
+                              className={cn(
+                                "px-4 py-3 text-sm cursor-pointer transition-colors flex items-center justify-between",
+                                studentId === student.id ? "bg-emerald-50 text-emerald-700 font-bold" : "text-slate-700 hover:bg-slate-50"
+                              )}
+                            >
+                              {student.name}
+                              {studentId === student.id && <Check className="w-4 h-4" />}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-4 py-8 text-center text-slate-400 text-xs italic">
+                            لم يتم العثور على هذا الاسم
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
+              <input type="hidden" required value={studentId} />
             </div>
 
             {/* Surahs Input */}
@@ -143,7 +226,8 @@ export function StudentForm({ students, onSubmit }: StudentFormProps) {
             <div className="pt-4">
               <button
                 type="submit"
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-emerald-100 flex items-center justify-center gap-2 group"
+                disabled={!studentId}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-emerald-100 flex items-center justify-center gap-2 group"
               >
                 <span>إرسال وتحديث الجدول</span>
                 <Send className="w-4 h-4 group-hover:translate-x-[-4px] transition-transform" />
