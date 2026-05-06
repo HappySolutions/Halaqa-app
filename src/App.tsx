@@ -59,6 +59,8 @@ export default function App() {
       snapshot.forEach((doc) => {
         studentsData.push({ id: doc.id, ...doc.data() } as Student);
       });
+      // Sort alphabetically by name (Arabic locale)
+      studentsData.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
       setStudents(studentsData);
     }, (error) => {
       console.error("Error fetching students:", error);

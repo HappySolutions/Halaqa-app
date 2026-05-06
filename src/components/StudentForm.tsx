@@ -108,8 +108,8 @@ export function StudentForm({ students, onSubmit }: StudentFormProps) {
 
             {/* Pages & Status */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-               <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">عدد الأوجه</label>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">عدد أوجه المراجعة</label>
                 <input
                   type="number"
                   min="0"
@@ -122,7 +122,7 @@ export function StudentForm({ students, onSubmit }: StudentFormProps) {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">مراجعة</label>
-                <div 
+                <div
                   onClick={() => setHasReviewed(!hasReviewed)}
                   className={cn(
                     "w-full h-12 flex items-center gap-2 rounded-xl px-4 cursor-pointer transition-all border",
