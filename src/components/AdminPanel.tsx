@@ -39,8 +39,8 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
     const year = format(todayDate, 'yyyy');
     const dayNum = format(todayDate, 'dd');
     
-    // Hijri Date using Intl
-    const hijriFormatter = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', {
+    // Hijri Date using Intl - Using nu-latn for English numbers
+    const hijriFormatter = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-nu-latn', {
       day: 'numeric',
       month: 'long',
       year: 'numeric'
