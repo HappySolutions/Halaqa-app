@@ -21,7 +21,7 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
   const [isAbsent, setIsAbsent] = useState(false);
   const [absenceReason, setAbsenceReason] = useState('');
   const [submitted, setSubmitted] = useState(false);
-  
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -37,14 +37,14 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
 
   const filteredStudents = useMemo(() => {
     if (!searchTerm) return students;
-    return students.filter(s => 
+    return students.filter(s =>
       s.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [students, searchTerm]);
 
-  const selectedStudent = useMemo(() => 
-    students.find(s => s.id === studentId), 
-  [students, studentId]);
+  const selectedStudent = useMemo(() =>
+    students.find(s => s.id === studentId),
+    [students, studentId]);
 
   const isDuplicate = useMemo(() => {
     if (!studentId) return false;
@@ -58,7 +58,7 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
       const ksaString = new Date().toLocaleString("en-US", { timeZone: "Asia/Riyadh" });
       const ksaDate = new Date(ksaString);
       const ksaHours = ksaDate.getHours();
-      
+
       // Restriction: 19:00 (7 PM) to 22:00 (10 PM)
       return ksaHours >= 19 && ksaHours < 22;
     } catch (e) {
@@ -111,7 +111,7 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
             </div>
             <h2 className="text-2xl font-bold text-slate-800 mb-2">التسجيل مغلق الآن</h2>
             <p className="text-slate-500 leading-relaxed">
-              عذراً، لا يمكن استقبال البطاقات في الوقت الحالي.<br/>
+              عذراً، لا يمكن استقبال البطاقات في الوقت الحالي.<br />
               فترة التوقف اليومية: من <span className="font-bold">7:00 مساءً</span> حتى <span className="font-bold">10:00 مساءً</span> بتوقيت مكة المكرمة.
             </p>
             <div className="mt-8 p-4 bg-white rounded-xl border border-amber-100 text-xs text-amber-700 italic">
@@ -149,7 +149,7 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
             <div className="space-y-2" ref={dropdownRef}>
               <label className="text-sm font-semibold text-slate-700">اسم الطالبة</label>
               <div className="relative">
-                <div 
+                <div
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className={cn(
                     "w-full h-12 bg-slate-50 border rounded-xl px-4 flex items-center justify-between cursor-pointer transition-all",
@@ -185,7 +185,7 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
                             className="w-full h-10 pr-9 pl-8 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-emerald-500 transition-all"
                           />
                           {searchTerm && (
-                            <button 
+                            <button
                               type="button"
                               onClick={() => setSearchTerm('')}
                               className="absolute left-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
@@ -228,7 +228,7 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
             </div>
 
             {isDuplicate && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-start gap-3 text-amber-800"
@@ -244,7 +244,7 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
             {!isDuplicate && (
               <>
                 {/* Absence Toggle */}
-                <div 
+                <div
                   onClick={() => setIsAbsent(!isAbsent)}
                   className={cn(
                     "w-full h-12 flex items-center gap-3 rounded-xl px-4 cursor-pointer transition-all border",
@@ -291,7 +291,7 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
                     >
                       {/* Surahs Input */}
                       <div className="space-y-2">
-                        <label className="text-sm font-semibold text-slate-700">السورة / السور</label>
+                        <label className="text-sm font-semibold text-slate-700">السورة / السور التي تمت مراجعتها</label>
                         <input
                           type="text"
                           required={!isAbsent}
