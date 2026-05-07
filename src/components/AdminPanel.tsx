@@ -156,7 +156,7 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                <div className="flex items-center gap-1 transition-all">
                   <button
                     onClick={() => onToggleDeferred(report.id)}
                     title={report.isDeferred ? "إلغاء الترحيل" : "ترحيل للغد"}
