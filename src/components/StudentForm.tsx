@@ -112,7 +112,7 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
             <h2 className="text-2xl font-bold text-slate-800 mb-2">التسجيل مغلق الآن</h2>
             <p className="text-slate-500 leading-relaxed">
               عذراً، لا يمكن استقبال البطاقات في الوقت الحالي.<br />
-              فترة التوقف اليومية: من <span className="font-bold">7:00 مساءً</span> حتى <span className="font-bold">10:00 مساءً</span> بتوقيت مكة المكرمة.
+              فترة التوقف اليومية: من <span className="font-bold">7:00 مساءً</span> حتى <span className="font-bold">11:00 مساءً</span> بتوقيت مكة المكرمة.
             </p>
             <div className="mt-8 p-4 bg-white rounded-xl border border-amber-100 text-xs text-amber-700 italic">
               نسعد باستقبال بطاقاتكنّ خارج هذه الفترة.

@@ -9,7 +9,7 @@ import { StudentForm } from './components/StudentForm';
 import { AdminPanel } from './components/AdminPanel';
 import { StudentManager } from './components/StudentManager';
 import { Student, Report, INITIAL_STUDENTS } from './types';
-import { format } from 'date-fns';
+import { format, addDays, getDay, parseISO } from 'date-fns';
 import { Settings, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
@@ -162,8 +162,28 @@ export default function App() {
     if (!report) return;
 
     try {
+      const isNowDeferred = !report.isDeferred;
+      let newDate = report.date;
+
+      if (isNowDeferred) {
+        // Calculate next working day
+        const currentDate = parseISO(report.date);
+        let nextDate = addDays(currentDate, 1);
+        
+        // Skip Friday (5) and Saturday (6)
+        while (getDay(nextDate) === 5 || getDay(nextDate) === 6) {
+          nextDate = addDays(nextDate, 1);
+        }
+        newDate = format(nextDate, 'yyyy-MM-dd');
+      } else {
+        // If un-deferring, move back to actual today
+        newDate = format(new Date(), 'yyyy-MM-dd');
+      }
+
       await updateDoc(doc(db, 'reports', id), {
-        isDeferred: !report.isDeferred
+        isDeferred: isNowDeferred,
+        date: newDate,
+        timestamp: serverTimestamp() // Update timestamp to reflect the move
       });
     } catch (error) {
       console.error("Error updating report: ", error);
