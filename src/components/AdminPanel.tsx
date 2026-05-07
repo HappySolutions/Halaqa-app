@@ -59,16 +59,11 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
     text += `.....................\n`;
     text += `الرقم الوظيفي: 3908\n`;
     text += `عدد الحضور:${stats.presentCount}\n`;
-    text += `أوجه المراجعة:${stats.totalPages}\n`;
+    text += `عدد أوجه المراجعة:${stats.totalPages}\n`;
     text += `عدد أوجه الحفظ:${Math.floor(stats.presentCount / 2)}\n`;
     text += `المعلمة: نور أحمد\n`;
-    text += `*****\n`;
-    text += `${dayName}\n`;
-    text += `........\n`;
-    text += `👇👇\n`;
-    text += `م.تعني مراجعه\n`;
-    text += `د.يعني درس جديد\n`;
-    text += `👇👇\n`;
+    text += `****************************\n`;
+
     text += `🖋️ حضور الطالبات حسب بطاقة:\n`;
 
     if (presentReports.length === 0) {
@@ -90,13 +85,16 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
       });
     }
 
-    text += `\n👇\n`;
+    text += `\n👇👇\n`;
+    text += `م.تعني مراجعه\n`;
+    text += `د.يعني درس جديد\n`;
     text += `علامة✅️انها سمعت لدا المعلمه درس اليوم\n`;
     text += `علامة ☑️ تعني أن الطالبة راجعت\n`;
     text += `علامة ↩️ تعني أن الطالبة لم يتسع وقت الحلقة لتسميعها وتم ترحيلها الى اليوم التالي\n`;
     text += `⁉️لم تحضرالحصه\n`;
     text += `❌️غائبه بدون عذر\n`;
     text += `📍🔴اجازه`;
+    text += `👆👆\n`;
 
     return text;
   };
