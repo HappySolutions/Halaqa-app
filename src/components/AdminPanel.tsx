@@ -16,7 +16,7 @@ interface AdminPanelProps {
 
 export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred, onClearAll }: AdminPanelProps) {
   const today = format(new Date(), 'yyyy-MM-dd');
-  
+
   const todayReports = useMemo(() => {
     return reports
       .filter(r => r.date === today)
@@ -35,32 +35,40 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
 
   const generateWhatsAppText = () => {
     const todayDate = new Date();
-    
+
     const dayName = format(todayDate, 'EEEE', { locale: ar });
-    const monthName = format(todayDate, 'MMMM', { locale: ar });
-    const year = format(todayDate, 'yyyy');
-    const dayNum = format(todayDate, 'dd');
-    
+
     // Hijri Date using Intl - Using nu-latn for English numbers
-    const hijriFormatter = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-nu-latn', {
-      day: 'numeric',
-      month: 'long',
+    const hijriFormatter = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
+      day: '2-digit',
+      month: '2-digit',
       year: 'numeric'
     });
-    const formattedHijri = hijriFormatter.format(todayDate);
+    const hijriParts = hijriFormatter.formatToParts(todayDate);
+    const hDay = hijriParts.find(p => p.type === 'day')?.value || '';
+    const hMonth = hijriParts.find(p => p.type === 'month')?.value || '';
+    const hYear = hijriParts.find(p => p.type === 'year')?.value || '';
+    const formattedHijri = `${hDay}/${hMonth}/${hYear}`;
 
     const presentReports = todayReports.filter(r => !r.isAbsent);
     const absentReports = todayReports.filter(r => r.isAbsent);
 
-    let text = `يوم ${dayName}\n`;
-    text += `التاريخ الهجري: ${formattedHijri}\n`;
-    text += `التاريخ الميلادي: ${dayNum} ${monthName} ${year}م\n`;
+    let text = `${dayName}\n`;
+    text += `${formattedHijri}\n`;
+    text += `${format(todayDate, 'dd/MM/yyyy')}م\n`;
     text += `.....................\n`;
     text += `الرقم الوظيفي: 3908\n`;
     text += `عدد الحضور:${stats.presentCount}\n`;
     text += `أوجه المراجعة:${stats.totalPages}\n`;
     text += `عدد أوجه الحفظ:${Math.floor(stats.presentCount / 2)}\n`;
     text += `المعلمة: نور أحمد\n`;
+    text += `*****\n`;
+    text += `${dayName}\n`;
+    text += `........\n`;
+    text += `👇👇\n`;
+    text += `م.تعني مراجعه\n`;
+    text += `د.يعني درس جديد\n`;
+    text += `👇👇\n`;
     text += `🖋️ حضور الطالبات حسب بطاقة:\n`;
 
     if (presentReports.length === 0) {
@@ -81,7 +89,7 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
         text += `${index + 1}-${r.studentName} (${r.absenceReason || 'بدون عذر'})\n`;
       });
     }
-    
+
     text += `\n👇\n`;
     text += `علامة✅️انها سمعت لدا المعلمه درس اليوم\n`;
     text += `علامة ☑️ تعني أن الطالبة راجعت\n`;
@@ -89,7 +97,7 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
     text += `⁉️لم تحضرالحصه\n`;
     text += `❌️غائبه بدون عذر\n`;
     text += `📍🔴اجازه`;
-    
+
     return text;
   };
 
@@ -145,7 +153,7 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
                 <div>
                   <div className="flex items-center gap-2">
                     <div className={cn(
-                      "w-1.5 h-1.5 rounded-full", 
+                      "w-1.5 h-1.5 rounded-full",
                       report.isAbsent ? "bg-red-500" : (report.hasReviewed ? "bg-emerald-500" : "bg-slate-300")
                     )} />
                     <span className="font-bold text-slate-800 text-sm">{report.studentName}</span>
@@ -155,7 +163,7 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
                     {report.isAbsent ? (report.absenceReason || 'لا يوجد عذر') : report.surahs}
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-1 transition-all">
                   <button
                     onClick={() => onToggleDeferred(report.id)}
