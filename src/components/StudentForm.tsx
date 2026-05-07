@@ -60,12 +60,12 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
       const ksaHours = ksaDate.getHours();
 
       // Restriction: 19:00 (7 PM) to 22:00 (10 PM)
-      return ksaHours >= 19 && ksaHours < 22;
+      return ksaHours >= 19 && ksaHours < 23;
     } catch (e) {
       const now = new Date();
       const utcHours = now.getUTCHours();
       const ksaHours = (utcHours + 3) % 24;
-      return ksaHours >= 19 && ksaHours < 22;
+      return ksaHours >= 19 && ksaHours < 23;
     }
   }, []);
 
