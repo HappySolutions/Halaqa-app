@@ -93,8 +93,8 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
     text += `علامة ↩️ تعني أن الطالبة لم يتسع وقت الحلقة لتسميعها وتم ترحيلها الى اليوم التالي\n`;
     text += `⁉️لم تحضرالحصه\n`;
     text += `❌️غائبه بدون عذر\n`;
-    text += `📍🔴اجازه`;
-    text += `👆👆\n`;
+    text += `📍🔴اجازه\n`;
+    text += `👆👆`;
 
     return text;
   };
