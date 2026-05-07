@@ -54,7 +54,7 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
     const absentReports = todayReports.filter(r => r.isAbsent);
 
     let text = `${dayName}\n`;
-    text += `ه ${formattedHijri}\n`;
+    text += `${formattedHijri} هـ\n`;
     text += `م ${format(todayDate, 'dd/MM/yyyy')}\n`;
     text += `.....................\n`;
     text += `الرقم الوظيفي: 3908\n`;
