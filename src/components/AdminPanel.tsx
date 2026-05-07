@@ -55,7 +55,7 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
 
     let text = `${dayName}\n`;
     text += `${formattedHijri} هـ\n`;
-    text += `م ${format(todayDate, 'dd/MM/yyyy')}\n`;
+    text += `${format(todayDate, 'dd/MM/yyyy')} م\n`;
     text += `.....................\n`;
     text += `الرقم الوظيفي: 3908\n`;
     text += `عدد الحضور:${stats.presentCount}\n`;
