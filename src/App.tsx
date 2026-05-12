@@ -8,7 +8,7 @@ import { Header } from './components/Header';
 import { StudentForm } from './components/StudentForm';
 import { AdminPanel } from './components/AdminPanel';
 import { StudentManager } from './components/StudentManager';
-import { Student, Report, INITIAL_STUDENTS } from './types';
+import { Report, Student, INITIAL_STUDENTS, UpdateReportData } from './types';
 import { format, addDays, getDay, parseISO } from 'date-fns';
 import { Settings, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -190,6 +190,19 @@ export default function App() {
     }
   };
 
+  const handleUpdateReport = async (id: string, data: UpdateReportData) => {
+    if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
+    try {
+      await updateDoc(doc(db, 'reports', id), {
+        ...data,
+        timestamp: serverTimestamp() // Optional: update timestamp if needed, but maybe better to keep original? 
+        // Let's not update timestamp so the "turn" stays the same.
+      });
+    } catch (error) {
+      console.error("Error updating report: ", error);
+    }
+  };
+
   const handleClearToday = async () => {
     if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
     const today = format(new Date(), 'yyyy-MM-dd');
@@ -308,6 +321,7 @@ export default function App() {
                     students={students} 
                     onDeleteReport={handleDeleteReport}
                     onToggleDeferred={handleToggleDeferred}
+                    onUpdateReport={handleUpdateReport}
                     onClearAll={handleClearToday}
                   />
                   

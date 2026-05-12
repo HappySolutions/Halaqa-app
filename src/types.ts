@@ -18,6 +18,8 @@ export interface Report {
   date: string; // YYYY-MM-DD
 }
 
+export type UpdateReportData = Partial<Omit<Report, 'id' | 'studentId' | 'studentName'>>;
+
 export const INITIAL_STUDENTS: Student[] = [
   { id: '1', name: 'أروى السماني' },
   { id: '2', name: 'أسماء العسكري' },

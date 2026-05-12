@@ -11,10 +11,13 @@ interface AdminPanelProps {
   students: Student[];
   onDeleteReport: (id: string) => void;
   onToggleDeferred: (id: string) => void;
+  onUpdateReport: (id: string, data: any) => void;
   onClearAll: () => void;
 }
 
-export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred, onClearAll }: AdminPanelProps) {
+export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred, onUpdateReport, onClearAll }: AdminPanelProps) {
+  const [editingId, setEditingId] = React.useState<string | null>(null);
+  const [editForm, setEditForm] = React.useState({ surahs: '', pagesReviewed: 0 });
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const todayReports = useMemo(() => {
@@ -32,6 +35,16 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
 
     return { total, completed, percentage, totalPages, presentCount: presentReports.length };
   }, [students, todayReports]);
+
+  const handleStartEdit = (report: Report) => {
+    setEditingId(report.id);
+    setEditForm({ surahs: report.surahs, pagesReviewed: report.pagesReviewed });
+  };
+
+  const handleSaveEdit = (id: string) => {
+    onUpdateReport(id, editForm);
+    setEditingId(null);
+  };
 
   const generateWhatsAppText = () => {
     const todayDate = new Date();
@@ -146,39 +159,74 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
               <motion.div
                 layout
                 key={report.id}
-                className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group"
+                className="flex flex-col p-3 bg-slate-50 rounded-xl border border-slate-100 group"
               >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <div className={cn(
-                      "w-1.5 h-1.5 rounded-full",
-                      report.isAbsent ? "bg-red-500" : (report.hasReviewed ? "bg-emerald-500" : "bg-slate-300")
-                    )} />
-                    <span className="font-bold text-slate-800 text-sm">{report.studentName}</span>
-                    {report.isAbsent && <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-md font-bold">غائبة</span>}
-                  </div>
-                  <div className="text-[11px] text-slate-500 mr-3.5 italic">
-                    {report.isAbsent ? (report.absenceReason || 'لا يوجد عذر') : report.surahs}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1 transition-all">
-                  <button
-                    onClick={() => onToggleDeferred(report.id)}
-                    title={report.isDeferred ? "إلغاء الترحيل" : "ترحيل للغد"}
-                    className={cn(
-                      "p-1.5 rounded transition-all text-lg",
-                      report.isDeferred ? "bg-amber-100" : "hover:bg-slate-100"
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "w-1.5 h-1.5 rounded-full",
+                        report.isAbsent ? "bg-red-500" : (report.hasReviewed ? "bg-emerald-500" : "bg-slate-300")
+                      )} />
+                      <span className="font-bold text-slate-800 text-sm">{report.studentName}</span>
+                      {report.isAbsent && <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-md font-bold">غائبة</span>}
+                    </div>
+                    {editingId === report.id ? (
+                      <div className="mt-2 space-y-2">
+                        <input
+                          type="text"
+                          value={editForm.surahs}
+                          onChange={(e) => setEditForm({ ...editForm, surahs: e.target.value })}
+                          className="w-full text-xs p-1 border rounded"
+                          placeholder="السور"
+                        />
+                        <input
+                          type="number"
+                          step="0.5"
+                          value={editForm.pagesReviewed}
+                          onChange={(e) => setEditForm({ ...editForm, pagesReviewed: parseFloat(e.target.value) })}
+                          className="w-full text-xs p-1 border rounded"
+                          placeholder="الأوجه"
+                        />
+                        <div className="flex gap-2">
+                          <button onClick={() => handleSaveEdit(report.id)} className="text-[10px] bg-emerald-500 text-white px-2 py-1 rounded">حفظ</button>
+                          <button onClick={() => setEditingId(null)} className="text-[10px] bg-slate-300 text-slate-700 px-2 py-1 rounded">إلغاء</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-slate-500 mr-3.5 italic">
+                        {report.isAbsent ? (report.absenceReason || 'لا يوجد عذر') : `${report.pagesReviewed} وجه - ${report.surahs}`}
+                      </div>
                     )}
-                  >
-                    ↩️
-                  </button>
-                  <button
-                    onClick={() => onDeleteReport(report.id)}
-                    className="p-1.5 text-slate-400 hover:text-red-500 transition-all"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  </div>
+
+                  <div className="flex items-center gap-1 transition-all">
+                    {!report.isAbsent && (
+                      <button
+                        onClick={() => handleStartEdit(report)}
+                        className="p-1.5 text-slate-400 hover:text-emerald-500 transition-all"
+                        title="تعديل"
+                      >
+                        <span className="text-sm">✏️</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => onToggleDeferred(report.id)}
+                      title={report.isDeferred ? "إلغاء الترحيل" : "ترحيل للغد"}
+                      className={cn(
+                        "p-1.5 rounded transition-all text-lg",
+                        report.isDeferred ? "bg-amber-100" : "hover:bg-slate-100"
+                      )}
+                    >
+                      ↩️
+                    </button>
+                    <button
+                      onClick={() => onDeleteReport(report.id)}
+                      className="p-1.5 text-slate-400 hover:text-red-500 transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             ))}

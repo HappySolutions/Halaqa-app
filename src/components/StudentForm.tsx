@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Check, Send, User, Search, ChevronDown, X, AlertCircle } from 'lucide-react';
+import { Check, Send, User, Search, ChevronDown, X, AlertCircle, Users } from 'lucide-react';
 import { Student, Report } from '@/types';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -362,6 +362,63 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
           </motion.form>
         )}
       </AnimatePresence>
+
+      {/* Today's Registration List (Visible to Students) */}
+      <div className="mt-12 space-y-4">
+        <div className="flex items-center justify-between px-2">
+          <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <Users className="w-5 h-5 text-emerald-600" />
+            قائمة المسجلات اليوم
+          </h3>
+          <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full">
+            {reports.filter(r => r.date === format(new Date(), 'yyyy-MM-dd')).length} طالبة
+          </span>
+        </div>
+
+        <div className="space-y-3">
+          {reports
+            .filter(r => r.date === format(new Date(), 'yyyy-MM-dd'))
+            .sort((a, b) => a.timestamp - b.timestamp)
+            .map((r, index) => (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                key={r.id}
+                className={cn(
+                  "spiritual-card p-4 flex items-center justify-between border-slate-100",
+                  r.studentId === studentId ? "ring-2 ring-emerald-500/20 bg-emerald-50/30" : ""
+                )}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-sm">
+                    {index + 1}
+                  </div>
+                  <div>
+                    <div className="font-bold text-slate-800 text-sm">{r.studentName}</div>
+                    <div className="text-[10px] text-slate-500">
+                      {r.isAbsent ? (
+                        <span className="text-red-500 font-bold">غائبة: {r.absenceReason}</span>
+                      ) : (
+                        <span>{r.pagesReviewed} وجه - {r.surahs}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {r.hasReviewed && !r.isAbsent && (
+                  <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <Check className="w-3 h-3" />
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          
+          {reports.filter(r => r.date === format(new Date(), 'yyyy-MM-dd')).length === 0 && (
+            <div className="text-center py-10 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+              <p className="text-sm text-slate-400 italic">لم يتم تسجيل أي طالبة بعد لهذا اليوم</p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
