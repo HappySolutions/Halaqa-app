@@ -72,8 +72,8 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
     text += `.....................\n`;
     text += `الرقم الوظيفي: 3908\n`;
     text += `عدد الحضور:${stats.presentCount}\n`;
-    text += `عدد أوجه المراجعة:${stats.totalPages}\n`;
     text += `عدد أوجه الحفظ:${Math.floor(stats.presentCount / 2)}\n`;
+    text += `عدد أوجه المراجعة:${stats.totalPages}\n`;
     text += `المعلمة: نور أحمد\n`;
     text += `****************************\n`;
 
