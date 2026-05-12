@@ -89,7 +89,7 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
       });
     }
 
-    text += `***********************\n\n`;
+    text += `***********************\n`;
     text += `\nالطالبة الغائبة بعذر📝\n`;
     if (absentReports.length === 0) {
       text += "1-\n2-\n3-\n";
