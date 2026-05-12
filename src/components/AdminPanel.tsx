@@ -17,7 +17,7 @@ interface AdminPanelProps {
 
 export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred, onUpdateReport, onClearAll }: AdminPanelProps) {
   const [editingId, setEditingId] = React.useState<string | null>(null);
-  const [editForm, setEditForm] = React.useState({ surahs: '', pagesReviewed: 0 });
+  const [editForm, setEditForm] = React.useState({ surahs: '', pagesReviewed: 0, hasReviewed: false });
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const todayReports = useMemo(() => {
@@ -38,7 +38,11 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
 
   const handleStartEdit = (report: Report) => {
     setEditingId(report.id);
-    setEditForm({ surahs: report.surahs, pagesReviewed: report.pagesReviewed });
+    setEditForm({ 
+      surahs: report.surahs, 
+      pagesReviewed: report.pagesReviewed,
+      hasReviewed: report.hasReviewed 
+    });
   };
 
   const handleSaveEdit = (id: string) => {
@@ -181,14 +185,25 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
                           className="w-full text-xs p-1 border rounded"
                           placeholder="السور"
                         />
-                        <input
-                          type="number"
-                          step="0.5"
-                          value={editForm.pagesReviewed}
-                          onChange={(e) => setEditForm({ ...editForm, pagesReviewed: parseFloat(e.target.value) })}
-                          className="w-full text-xs p-1 border rounded"
-                          placeholder="الأوجه"
-                        />
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            step="0.5"
+                            value={editForm.pagesReviewed}
+                            onChange={(e) => setEditForm({ ...editForm, pagesReviewed: parseFloat(e.target.value) })}
+                            className="flex-1 text-xs p-1 border rounded"
+                            placeholder="الأوجه"
+                          />
+                          <label className="flex items-center gap-1 text-[10px] cursor-pointer bg-white px-2 border rounded">
+                            <input
+                              type="checkbox"
+                              checked={editForm.hasReviewed}
+                              onChange={(e) => setEditForm({ ...editForm, hasReviewed: e.target.checked })}
+                              className="w-3 h-3"
+                            />
+                            تمت المراجعة
+                          </label>
+                        </div>
                         <div className="flex gap-2">
                           <button onClick={() => handleSaveEdit(report.id)} className="text-[10px] bg-emerald-500 text-white px-2 py-1 rounded">حفظ</button>
                           <button onClick={() => setEditingId(null)} className="text-[10px] bg-slate-300 text-slate-700 px-2 py-1 rounded">إلغاء</button>
