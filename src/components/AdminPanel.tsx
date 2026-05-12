@@ -75,7 +75,7 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
     text += `عدد أوجه الحفظ:${Math.floor(stats.presentCount / 2)}\n`;
     text += `عدد أوجه المراجعة:${stats.totalPages}\n`;
     text += `المعلمة: نور أحمد\n`;
-    text += `****************************\n`;
+    text += `***********************\n`;
 
     text += `🖋️ حضور الطالبات حسب بطاقة:\n`;
 
@@ -85,10 +85,11 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
       presentReports.forEach((r, index) => {
         const checkMark = r.hasReviewed ? '☑️' : '❌';
         const deferredMark = r.isDeferred ? '↩️' : '';
-        text += `${index + 1}-${r.studentName}${r.pagesReviewed}${r.surahs}${checkMark}${deferredMark}\n`;
+        text += `${index + 1}-${r.studentName}${r.pagesReviewed}${r.surahs}${checkMark}${deferredMark}\n\n`;
       });
     }
 
+    text += `***********************\n\n`;
     text += `\nالطالبة الغائبة بعذر📝\n`;
     if (absentReports.length === 0) {
       text += "1-\n2-\n3-\n";
