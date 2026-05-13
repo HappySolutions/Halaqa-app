@@ -125,7 +125,9 @@ export function AdminPanel({
       presentReports.forEach((r, index) => {
         const checkMark = r.hasReviewed ? '☑️' : '❌';
         const deferredMark = r.isDeferred ? '↩️' : '';
-        text += `${index + 1}-${r.studentName}${r.pagesReviewed}${r.surahs}${checkMark}${deferredMark}\n\n`;
+        const newPart = r.newSurah ? ` د. ${r.newSurah}` : '';
+        const reviewPart = r.surahs ? ` م. ${r.surahs}` : '';
+        text += `${index + 1}- ${r.studentName} ${r.pagesReviewed}${newPart}${reviewPart} ${checkMark}${deferredMark}\n\n`;
       });
     }
 
@@ -285,8 +287,25 @@ export function AdminPanel({
                               value={editForm.surahs}
                               onChange={(e) => setEditForm({ ...editForm, surahs: e.target.value })}
                               className="w-full text-xs p-1 border rounded bg-white"
-                              placeholder="السور المراجعة"
+                              placeholder="مراجعة (م.)"
                             />
+                            <div className="grid grid-cols-2 gap-2">
+                              <input
+                                type="text"
+                                value={editForm.newSurah || ''}
+                                onChange={(e) => setEditForm({ ...editForm, newSurah: e.target.value })}
+                                className="text-xs p-1 border rounded bg-white"
+                                placeholder="درس جديد (د.)"
+                              />
+                              <input
+                                type="number"
+                                step="0.5"
+                                value={editForm.newPagesCount || 0}
+                                onChange={(e) => setEditForm({ ...editForm, newPagesCount: parseFloat(e.target.value) || 0 })}
+                                className="text-xs p-1 border rounded bg-white"
+                                placeholder="أوجه الدرس"
+                              />
+                            </div>
                             <div className="flex gap-2">
                               <input
                                 type="number"
@@ -294,7 +313,7 @@ export function AdminPanel({
                                 value={editForm.pagesReviewed}
                                 onChange={(e) => setEditForm({ ...editForm, pagesReviewed: parseFloat(e.target.value) })}
                                 className="flex-1 text-xs p-1 border rounded bg-white"
-                                placeholder="الأوجه"
+                                placeholder="أوجه المراجعة"
                               />
                               <label className="flex items-center gap-1 text-[10px] cursor-pointer bg-white px-2 border rounded">
                                 <input
@@ -303,7 +322,7 @@ export function AdminPanel({
                                   onChange={(e) => setEditForm({ ...editForm, hasReviewed: e.target.checked })}
                                   className="w-3 h-3"
                                 />
-                                تمت المراجعة
+                                مراجعة
                               </label>
                             </div>
                           </>
@@ -315,7 +334,12 @@ export function AdminPanel({
                       </div>
                     ) : (
                       <div className="text-[11px] text-slate-500 mr-3.5 italic">
-                        {report.isAbsent ? (report.absenceReason || 'لا يوجد عذر') : `${report.pagesReviewed} وجه - ${report.surahs}`}
+                        {report.isAbsent ? (report.absenceReason || 'لا يوجد عذر') : (
+                          <>
+                            {report.pagesReviewed} وجه م. {report.surahs}
+                            {report.newSurah && ` | ${report.newPagesCount} وجه د. ${report.newSurah}`}
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
