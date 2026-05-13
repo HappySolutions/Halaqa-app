@@ -30,7 +30,11 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
   const todayReports = useMemo(() => {
     return reports
       .filter(r => r.date === today)
-      .sort((a, b) => (a.turnOrder ?? a.timestamp) - (b.turnOrder ?? b.timestamp));
+      .sort((a, b) => {
+        const valA = a.turnOrder !== undefined ? a.turnOrder : a.timestamp;
+        const valB = b.turnOrder !== undefined ? b.turnOrder : b.timestamp;
+        return valA - valB;
+      });
   }, [reports, today]);
 
   const stats = useMemo(() => {

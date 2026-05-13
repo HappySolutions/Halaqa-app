@@ -438,7 +438,11 @@ export function StudentForm({ students, reports, onSubmit, onUpdate }: StudentFo
         <div className="space-y-3">
           {reports
             .filter(r => r.date === format(new Date(), 'yyyy-MM-dd'))
-            .sort((a, b) => (a.turnOrder ?? a.timestamp) - (b.turnOrder ?? b.timestamp))
+            .sort((a, b) => {
+              const valA = a.turnOrder !== undefined ? a.turnOrder : a.timestamp;
+              const valB = b.turnOrder !== undefined ? b.turnOrder : b.timestamp;
+              return valA - valB;
+            })
             .map((r, index) => (
               <motion.div
                 initial={{ opacity: 0, x: 20 }}

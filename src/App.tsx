@@ -124,13 +124,12 @@ export default function App() {
           timestamp: data.timestamp?.toMillis ? data.timestamp.toMillis() : (data.timestamp ?? 0)
         } as Report);
       });
-      // Sort: Today's reports by turnOrder, then timestamp. Older reports by timestamp.
+      // Sort: Today's reports by turnOrder (fallback to timestamp), then date.
       reportsData.sort((a, b) => {
         if (a.date === b.date) {
-          if (a.turnOrder !== undefined && b.turnOrder !== undefined) {
-            return a.turnOrder - b.turnOrder;
-          }
-          return a.timestamp - b.timestamp;
+          const valA = a.turnOrder !== undefined ? a.turnOrder : a.timestamp;
+          const valB = b.turnOrder !== undefined ? b.turnOrder : b.timestamp;
+          return valA - valB;
         }
         return b.timestamp - a.timestamp;
       });
@@ -215,9 +214,7 @@ export default function App() {
     if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
     try {
       await updateDoc(doc(db, 'reports', id), {
-        ...data,
-        timestamp: serverTimestamp() // Optional: update timestamp if needed, but maybe better to keep original? 
-        // Let's not update timestamp so the "turn" stays the same.
+        ...data
       });
     } catch (error) {
       console.error("Error updating report: ", error);
