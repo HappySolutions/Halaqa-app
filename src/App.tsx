@@ -74,8 +74,11 @@ export default function App() {
       // If students collection is empty, seed it with the initial students list
       if (snapshot.empty) {
         console.log('No students found, seeding Firestore with initial students...');
-        for (const student of INITIAL_STUDENTS) {
-          await addDoc(collection(db, 'students'), { name: student.name });
+        for (let i = 0; i < INITIAL_STUDENTS.length; i++) {
+          await addDoc(collection(db, 'students'), { 
+            name: INITIAL_STUDENTS[i].name, 
+            order: i 
+          });
         }
         return; // The onSnapshot will fire again after seeding
       }
@@ -83,8 +86,13 @@ export default function App() {
       snapshot.forEach((doc) => {
         studentsData.push({ id: doc.id, ...doc.data() } as Student);
       });
-      // Sort alphabetically by name (Arabic locale)
-      studentsData.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+      // Sort by order first, then name
+      studentsData.sort((a, b) => {
+        if (a.order !== undefined && b.order !== undefined) {
+          return a.order - b.order;
+        }
+        return a.name.localeCompare(b.name, 'ar');
+      });
       setStudents(studentsData);
     }, (error) => {
       console.error("Error fetching students:", error);
@@ -221,9 +229,36 @@ export default function App() {
   const handleAddStudent = async (name: string) => {
     if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
     try {
-      await addDoc(collection(db, 'students'), { name });
+      // Get the highest order to put the new student at the end
+      const maxOrder = students.length > 0 ? Math.max(...students.map(s => s.order || 0)) : -1;
+      await addDoc(collection(db, 'students'), { 
+        name,
+        order: maxOrder + 1
+      });
     } catch (error) {
       console.error("Error adding student: ", error);
+    }
+  };
+
+  const handleReorderStudents = async (studentId: string, direction: 'up' | 'down') => {
+    if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
+    
+    const currentIndex = students.findIndex(s => s.id === studentId);
+    if (currentIndex === -1) return;
+    
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= students.length) return;
+    
+    const currentStudent = students[currentIndex];
+    const targetStudent = students[targetIndex];
+    
+    try {
+      // Swap orders
+      const tempOrder = currentStudent.order;
+      await updateDoc(doc(db, 'students', currentStudent.id), { order: targetStudent.order });
+      await updateDoc(doc(db, 'students', targetStudent.id), { order: tempOrder });
+    } catch (error) {
+      console.error("Error reordering students: ", error);
     }
   };
 
@@ -344,6 +379,7 @@ export default function App() {
                           students={students} 
                           onAdd={handleAddStudent} 
                           onRemove={handleRemoveStudent} 
+                          onReorder={handleReorderStudents}
                         />
                       </motion.div>
                     )}

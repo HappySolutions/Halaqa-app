@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, UserPlus, Users } from 'lucide-react';
+import { Plus, Trash2, UserPlus, Users, ChevronUp, ChevronDown } from 'lucide-react';
 import { Student } from '@/types';
 import { motion } from 'motion/react';
 
@@ -7,9 +7,10 @@ interface StudentManagerProps {
   students: Student[];
   onAdd: (name: string) => void;
   onRemove: (id: string) => void;
+  onReorder: (id: string, direction: 'up' | 'down') => void;
 }
 
-export function StudentManager({ students, onAdd, onRemove }: StudentManagerProps) {
+export function StudentManager({ students, onAdd, onRemove, onReorder }: StudentManagerProps) {
   const [newName, setNewName] = useState('');
 
   const handleAdd = (e: React.FormEvent) => {
@@ -44,8 +45,8 @@ export function StudentManager({ students, onAdd, onRemove }: StudentManagerProp
           </button>
         </form>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {students.map((student) => (
+        <div className="space-y-2">
+          {students.map((student, index) => (
             <motion.div
               layout
               initial={{ opacity: 0, x: -10 }}
@@ -53,12 +54,30 @@ export function StudentManager({ students, onAdd, onRemove }: StudentManagerProp
               key={student.id}
               className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100 group"
             >
-              <span className="text-slate-700 text-sm font-medium">{student.name}</span>
+              <div className="flex items-center gap-3 flex-1">
+                <div className="flex flex-col">
+                  <button
+                    onClick={() => onReorder(student.id, 'up')}
+                    disabled={index === 0}
+                    className="p-0.5 text-slate-300 hover:text-emerald-500 disabled:opacity-0 transition-all"
+                  >
+                    <ChevronUp className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => onReorder(student.id, 'down')}
+                    disabled={index === students.length - 1}
+                    className="p-0.5 text-slate-300 hover:text-emerald-500 disabled:opacity-0 transition-all"
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                </div>
+                <span className="text-slate-700 text-sm font-medium">{student.name}</span>
+              </div>
               <button
                 onClick={() => onRemove(student.id)}
-                className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-500 transition-all"
+                className="opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-red-500 transition-all"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-4 h-4" />
               </button>
             </motion.div>
           ))}

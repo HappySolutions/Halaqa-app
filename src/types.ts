@@ -2,6 +2,7 @@
 export interface Student {
   id: string;
   name: string;
+  order: number;
 }
 
 export interface Report {
