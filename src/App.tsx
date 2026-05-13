@@ -292,7 +292,12 @@ export default function App() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
             >
-              <StudentForm students={students} reports={reports} onSubmit={handleAddReport} />
+              <StudentForm 
+                students={students} 
+                reports={reports} 
+                onSubmit={handleAddReport} 
+                onUpdate={handleUpdateReport}
+              />
             </motion.div>
           ) : (
             <motion.div

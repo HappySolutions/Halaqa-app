@@ -9,10 +9,12 @@ interface StudentFormProps {
   students: Student[];
   reports: Report[];
   onSubmit: (report: Omit<Report, 'id' | 'timestamp' | 'date' | 'isDeferred'>) => void;
+  onUpdate: (id: string, data: any) => void;
 }
 
-export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
+export function StudentForm({ students, reports, onSubmit, onUpdate }: StudentFormProps) {
   const [studentId, setStudentId] = useState('');
+  const [editingReportId, setEditingReportId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [pages, setPages] = useState<number>(1);
@@ -46,11 +48,15 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
     students.find(s => s.id === studentId),
     [students, studentId]);
 
-  const isDuplicate = useMemo(() => {
-    if (!studentId) return false;
+  const existingReport = useMemo(() => {
+    if (!studentId) return null;
     const today = format(new Date(), 'yyyy-MM-dd');
-    return reports.some(r => r.studentId === studentId && r.date === today);
+    return reports.find(r => r.studentId === studentId && r.date === today);
   }, [studentId, reports]);
+
+  const isDuplicate = useMemo(() => {
+    return !!existingReport && !editingReportId;
+  }, [existingReport, editingReportId]);
 
   const isTimeRestricted = useMemo(() => {
     try {
@@ -69,12 +75,26 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
     }
   }, []);
 
+  const handleStartEdit = (report: Report) => {
+    setEditingReportId(report.id);
+    setStudentId(report.studentId);
+    setPages(report.pagesReviewed);
+    setSurahs(report.surahs);
+    setHasReviewed(report.hasReviewed);
+    setIsAbsent(report.isAbsent);
+    setAbsenceReason(report.absenceReason || '');
+    
+    // Scroll to form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!studentId || isDuplicate || isTimeRestricted) return;
+    if (!studentId || isTimeRestricted) return;
+    if (isDuplicate && !editingReportId) return;
     if (!isAbsent && !surahs) return;
 
-    onSubmit({
+    const reportData = {
       studentId,
       studentName: selectedStudent?.name || '',
       pagesReviewed: isAbsent ? 0 : pages,
@@ -82,12 +102,19 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
       hasReviewed: isAbsent ? false : hasReviewed,
       isAbsent,
       absenceReason: isAbsent ? absenceReason : '',
-    });
+    };
+
+    if (editingReportId) {
+      onUpdate(editingReportId, reportData);
+    } else {
+      onSubmit(reportData);
+    }
 
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
       setStudentId('');
+      setEditingReportId(null);
       setSearchTerm('');
       setPages(1);
       setSurahs('');
@@ -129,7 +156,9 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
             <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
               <Check className="w-10 h-10" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">تم التسجيل بنجاح!</h2>
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">
+              {editingReportId ? 'تم تحديث البيانات بنجاح!' : 'تم التسجيل بنجاح!'}
+            </h2>
             <p className="text-slate-500">بارك الله في جهودكِ.</p>
           </motion.div>
         ) : (
@@ -141,7 +170,9 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
             className="spiritual-card p-8 sm:p-10 space-y-6"
           >
             <div className="border-b border-slate-100 pb-6 text-center">
-              <h2 className="text-xl font-bold text-slate-800">تسجيل الحالة اليومية</h2>
+              <h2 className="text-xl font-bold text-slate-800">
+                {editingReportId ? 'تعديل البيانات المسجلة' : 'تسجيل الحالة اليومية'}
+              </h2>
               <p className="text-sm text-slate-500 mt-1">يرجى اختيار الاسم وتحديد حالة الحضور</p>
             </div>
 
@@ -150,10 +181,11 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
               <label className="text-sm font-semibold text-slate-700">اسم الطالبة</label>
               <div className="relative">
                 <div
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  onClick={() => !editingReportId && setIsDropdownOpen(!isDropdownOpen)}
                   className={cn(
                     "w-full h-12 bg-slate-50 border rounded-xl px-4 flex items-center justify-between cursor-pointer transition-all",
-                    isDropdownOpen ? "border-emerald-500 ring-2 ring-emerald-500/10" : "border-slate-200"
+                    isDropdownOpen ? "border-emerald-500 ring-2 ring-emerald-500/10" : "border-slate-200",
+                    editingReportId && "opacity-50 cursor-not-allowed"
                   )}
                 >
                   <div className="flex items-center gap-3">
@@ -162,7 +194,7 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
                       {selectedStudent ? selectedStudent.name : "ابحثي عن اسمكِ هنا..."}
                     </span>
                   </div>
-                  <ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform", isDropdownOpen && "rotate-180")} />
+                  {!editingReportId && <ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform", isDropdownOpen && "rotate-180")} />}
                 </div>
 
                 <AnimatePresence>
@@ -227,21 +259,32 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
               <input type="hidden" required value={studentId} />
             </div>
 
-            {isDuplicate && (
+            {isDuplicate && !editingReportId && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-start gap-3 text-amber-800"
+                className="bg-amber-50 border border-amber-200 p-4 rounded-xl space-y-3"
               >
-                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                <div className="text-xs leading-relaxed">
-                  <span className="font-bold block mb-1">تنبيه: سجلتِ من قبل!</span>
-                  لقد قمتِ بالتسجيل اليوم بالفعل. لا يمكنكِ إرسال أكثر من بطاقة في نفس اليوم لضمان دقة الإحصائيات.
+                <div className="flex items-start gap-3 text-amber-800">
+                  <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                  <div className="text-xs leading-relaxed">
+                    <span className="font-bold block mb-1">تنبيه: سجلتِ من قبل!</span>
+                    لقد قمتِ بالتسجيل اليوم بالفعل. يمكنكِ الضغط على زر التعديل أدناه إذا كنتِ ترغبين في تصحيح بياناتكِ.
+                  </div>
                 </div>
+                {existingReport && (
+                  <button
+                    type="button"
+                    onClick={() => handleStartEdit(existingReport)}
+                    className="w-full bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold py-2 rounded-lg transition-all"
+                  >
+                    تعديل بياناتي الحالية
+                  </button>
+                )}
               </motion.div>
             )}
 
-            {!isDuplicate && (
+            {(!isDuplicate || editingReportId) && (
               <>
                 {/* Absence Toggle */}
                 <div
@@ -341,21 +384,38 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
               </>
             )}
 
-            <div className="pt-4">
+            <div className="pt-4 flex flex-col gap-3">
               <button
                 type="submit"
-                disabled={!studentId || isDuplicate || isTimeRestricted}
+                disabled={!studentId || isTimeRestricted || (isDuplicate && !editingReportId)}
                 className={cn(
                   "w-full text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 group",
-                  (isDuplicate || isTimeRestricted) ? "bg-slate-300 cursor-not-allowed shadow-none" : (isAbsent ? "bg-red-600 hover:bg-red-700 shadow-red-100" : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100")
+                  (isDuplicate && !editingReportId) || isTimeRestricted ? "bg-slate-300 cursor-not-allowed shadow-none" : (isAbsent ? "bg-red-600 hover:bg-red-700 shadow-red-100" : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100")
                 )}
               >
                 <span>
-                  {isDuplicate ? 'تم التسجيل مسبقاً' : (isAbsent ? 'تسجيل الغياب' : 'إرسال وتحديث الجدول')}
+                  {editingReportId ? 'حفظ التعديلات' : (isDuplicate ? 'تم التسجيل مسبقاً' : (isAbsent ? 'تسجيل الغياب' : 'إرسال وتحديث الجدول'))}
                 </span>
                 {!isDuplicate && !isTimeRestricted && <Send className="w-4 h-4 group-hover:translate-x-[-4px] transition-transform" />}
               </button>
-              <p className="text-[10px] text-center text-slate-400 mt-4 leading-relaxed">
+              
+              {editingReportId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingReportId(null);
+                    setStudentId('');
+                    setPages(1);
+                    setSurahs('');
+                    setIsAbsent(false);
+                  }}
+                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded-xl transition-all text-sm"
+                >
+                  إلغاء التعديل
+                </button>
+              )}
+              
+              <p className="text-[10px] text-center text-slate-400 mt-2 leading-relaxed">
                 سيتم إرسال نسخة تلقائية إلى جروب الواتساب الخاص بالمعلمة
               </p>
             </div>
@@ -404,11 +464,22 @@ export function StudentForm({ students, reports, onSubmit }: StudentFormProps) {
                     </div>
                   </div>
                 </div>
-                {r.hasReviewed && !r.isAbsent && (
-                  <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                    <Check className="w-3 h-3" />
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  {r.studentId === studentId && !editingReportId && (
+                    <button
+                      onClick={() => handleStartEdit(r)}
+                      className="p-2 text-emerald-600 hover:bg-emerald-100 rounded-full transition-all"
+                      title="تعديل بياناتي"
+                    >
+                      <span className="text-xs font-bold">تعديل ✏️</span>
+                    </button>
+                  )}
+                  {r.hasReviewed && !r.isAbsent && (
+                    <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                      <Check className="w-3 h-3" />
+                    </div>
+                  )}
+                </div>
               </motion.div>
             ))}
           
