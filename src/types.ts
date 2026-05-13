@@ -21,8 +21,6 @@ export interface Report {
   halaqaId: string;
   pagesReviewed: number;
   surahs: string;
-  newSurah?: string;
-  newPagesCount?: number;
   hasReviewed: boolean;
   isDeferred: boolean;
   isAbsent: boolean;

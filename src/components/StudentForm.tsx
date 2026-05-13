@@ -24,8 +24,6 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
   const [hasReviewed, setHasReviewed] = useState(true);
   const [isAbsent, setIsAbsent] = useState(false);
   const [absenceReason, setAbsenceReason] = useState('');
-  const [newSurah, setNewSurah] = useState('');
-  const [newPagesCount, setNewPagesCount] = useState<number | string>(0);
   const [submitted, setSubmitted] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -101,8 +99,6 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
     setHasReviewed(report.hasReviewed);
     setIsAbsent(report.isAbsent);
     setAbsenceReason(report.absenceReason || '');
-    setNewSurah(report.newSurah || '');
-    setNewPagesCount(report.newPagesCount || 0);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -118,8 +114,6 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
       halaqaId: selectedHalaqaId,
       pagesReviewed: isAbsent ? 0 : pages,
       surahs: isAbsent ? 'غائبة' : surahs,
-      newSurah,
-      newPagesCount: Number(newPagesCount),
       hasReviewed: isAbsent ? false : hasReviewed,
       isAbsent,
       absenceReason: isAbsent ? absenceReason : '',
@@ -419,7 +413,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
                             step="0.5"
                             required={!isAbsent}
                             value={pages}
-                            onChange={(e) => setPages(parseFloat(e.target.value) || 0)}
+                            onChange={(e) => setPages(parseFloat(e.target.value))}
                             className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                           />
                         </div>
@@ -439,33 +433,6 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
                               {hasReviewed && <Check className="w-3 h-3" />}
                             </div>
                             <span className="text-sm font-medium">تمت المراجعة</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="pt-4 border-t border-slate-100">
-                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">الحفظ الجديد (الدرس)</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <label className="text-sm font-semibold text-slate-700">السورة الجديدة (الدرس)</label>
-                            <input
-                              type="text"
-                              placeholder="مثال: سورة نوح"
-                              value={newSurah}
-                              onChange={(e) => setNewSurah(e.target.value)}
-                              className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-semibold text-slate-700">عدد أوجه الحفظ</label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.5"
-                              value={newPagesCount}
-                              onChange={(e) => setNewPagesCount(parseFloat(e.target.value) || 0)}
-                              className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                            />
                           </div>
                         </div>
                       </div>
