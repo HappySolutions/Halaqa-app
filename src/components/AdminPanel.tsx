@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Clipboard, Trash2, Users, Check, ChevronUp, ChevronDown } from 'lucide-react';
+import { Clipboard, Trash2, Users, Check } from 'lucide-react';
 import { Report, Student } from '@/types';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -12,18 +12,18 @@ interface AdminPanelProps {
   onDeleteReport: (id: string) => void;
   onToggleDeferred: (id: string) => void;
   onUpdateReport: (id: string, data: any) => void;
-  onReorderReports: (id: string, direction: 'up' | 'down') => void;
   onClearAll: () => void;
 }
 
-export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred, onUpdateReport, onReorderReports, onClearAll }: AdminPanelProps) {
+export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred, onUpdateReport, onClearAll }: AdminPanelProps) {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editForm, setEditForm] = React.useState({ 
     surahs: '', 
     pagesReviewed: 0, 
     hasReviewed: false,
     isAbsent: false,
-    absenceReason: ''
+    absenceReason: '',
+    turnOrder: 0
   });
   const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -50,7 +50,8 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
       pagesReviewed: report.pagesReviewed,
       hasReviewed: report.hasReviewed,
       isAbsent: report.isAbsent,
-      absenceReason: report.absenceReason || ''
+      absenceReason: report.absenceReason || '',
+      turnOrder: report.turnOrder ?? 0
     });
   };
 
@@ -197,6 +198,15 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
                             />
                             طالبة غائبة
                           </label>
+                          <div className="flex items-center gap-1 bg-slate-100 px-2 py-1 border border-slate-200 rounded">
+                            <span className="text-[10px] text-slate-500 font-bold">رقم الدور:</span>
+                            <input
+                              type="number"
+                              value={editForm.turnOrder}
+                              onChange={(e) => setEditForm({ ...editForm, turnOrder: parseInt(e.target.value) || 0 })}
+                              className="w-10 text-[10px] font-bold text-center bg-transparent border-none outline-none"
+                            />
+                          </div>
                         </div>
 
                         {editForm.isAbsent ? (
@@ -249,22 +259,6 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
                     )}
                   </div>
 
-                  <div className="flex flex-col ml-2">
-                    <button
-                      onClick={() => onReorderReports(report.id, 'up')}
-                      disabled={index === 0}
-                      className="p-0.5 text-slate-300 hover:text-emerald-500 disabled:opacity-0 transition-all"
-                    >
-                      <ChevronUp className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => onReorderReports(report.id, 'down')}
-                      disabled={index === todayReports.length - 1}
-                      className="p-0.5 text-slate-300 hover:text-emerald-500 disabled:opacity-0 transition-all"
-                    >
-                      <ChevronDown className="w-4 h-4" />
-                    </button>
-                  </div>
 
                   <div className="flex items-center gap-1 transition-all">
                     <button

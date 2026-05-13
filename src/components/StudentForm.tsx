@@ -465,7 +465,7 @@ export function StudentForm({ students, reports, onSubmit, onUpdate }: StudentFo
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {r.studentId === studentId && !editingReportId && (
+                  {!editingReportId && (
                     <button
                       onClick={() => handleStartEdit(r)}
                       className="p-2 text-emerald-600 hover:bg-emerald-100 rounded-full transition-all"

@@ -152,14 +152,15 @@ export default function App() {
 
     try {
       const today = format(new Date(), 'yyyy-MM-dd');
-      const todayReportsCount = reports.filter(r => r.date === today).length;
+      const todayReports = reports.filter(r => r.date === today);
+      const maxTurnOrder = todayReports.length > 0 ? Math.max(...todayReports.map(r => r.turnOrder ?? 0)) : 0;
       
       await addDoc(collection(db, 'reports'), {
         ...reportData,
         timestamp: serverTimestamp(),
         date: today,
         isDeferred: false,
-        turnOrder: todayReportsCount + 1,
+        turnOrder: maxTurnOrder + 1,
       });
     } catch (error) {
       console.error("Error adding report: ", error);
@@ -249,35 +250,6 @@ export default function App() {
       });
     } catch (error) {
       console.error("Error adding student: ", error);
-    }
-  };
-
-  const handleReorderReports = async (reportId: string, direction: 'up' | 'down') => {
-    if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
-    
-    const today = format(new Date(), 'yyyy-MM-dd');
-    const todayReports = reports
-      .filter(r => r.date === today)
-      .sort((a, b) => (a.turnOrder ?? a.timestamp) - (b.turnOrder ?? b.timestamp));
-    
-    const currentIndex = todayReports.findIndex(r => r.id === reportId);
-    if (currentIndex === -1) return;
-    
-    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    if (targetIndex < 0 || targetIndex >= todayReports.length) return;
-    
-    const currentReport = todayReports[currentIndex];
-    const targetReport = todayReports[targetIndex];
-    
-    try {
-      // If turnOrder doesn't exist, initialize them based on current position
-      const currentOrder = currentReport.turnOrder ?? (currentIndex + 1);
-      const targetOrder = targetReport.turnOrder ?? (targetIndex + 1);
-      
-      await updateDoc(doc(db, 'reports', currentReport.id), { turnOrder: targetOrder });
-      await updateDoc(doc(db, 'reports', targetReport.id), { turnOrder: currentOrder });
-    } catch (error) {
-      console.error("Error reordering reports: ", error);
     }
   };
 
@@ -381,7 +353,6 @@ export default function App() {
                     onDeleteReport={handleDeleteReport}
                     onToggleDeferred={handleToggleDeferred}
                     onUpdateReport={handleUpdateReport}
-                    onReorderReports={handleReorderReports}
                     onClearAll={handleClearToday}
                   />
                   
