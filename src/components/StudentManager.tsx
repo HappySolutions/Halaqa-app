@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, UserPlus, Users, LayoutGrid } from 'lucide-react';
+import { Plus, Trash2, UserPlus, Users, LayoutGrid, Settings2, Check, X } from 'lucide-react';
 import { Student, Halaqa } from '@/types';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -8,17 +8,33 @@ interface StudentManagerProps {
   students: Student[];
   halaqat: Halaqa[];
   onAddHalaqa: (name: string) => void;
+  onUpdateHalaqa: (id: string, data: Partial<Halaqa>) => void;
   onDeleteHalaqa: (id: string) => void;
   onAdd: (name: string, halaqaId: string) => void;
   onRemove: (id: string) => void;
   onBulkAdd: (halaqaId: string, names: string[]) => void;
 }
 
-export function StudentManager({ students, halaqat, onAddHalaqa, onDeleteHalaqa, onAdd, onRemove, onBulkAdd }: StudentManagerProps) {
+export function StudentManager({ 
+  students, 
+  halaqat, 
+  onAddHalaqa, 
+  onUpdateHalaqa,
+  onDeleteHalaqa, 
+  onAdd, 
+  onRemove, 
+  onBulkAdd 
+}: StudentManagerProps) {
   const [newHalaqaName, setNewHalaqaName] = useState('');
   const [newStudentName, setNewStudentName] = useState('');
   const [bulkText, setBulkText] = useState('');
   const [selectedHalaqaId, setSelectedHalaqaId] = useState<string | null>(null);
+  const [editingHalaqaId, setEditingHalaqaId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    registrationLockTime: '19:00',
+    nextDayRegStartTime: '22:30'
+  });
   const [isImporting, setIsImporting] = useState(false);
   const [showBulkAdd, setShowBulkAdd] = useState(false);
 
@@ -27,6 +43,22 @@ export function StudentManager({ students, halaqat, onAddHalaqa, onDeleteHalaqa,
     if (!newHalaqaName.trim()) return;
     onAddHalaqa(newHalaqaName.trim());
     setNewHalaqaName('');
+  };
+
+  const handleStartEdit = (halaqa: Halaqa) => {
+    setEditingHalaqaId(halaqa.id);
+    setEditForm({
+      name: halaqa.name,
+      registrationLockTime: halaqa.registrationLockTime || '19:00',
+      nextDayRegStartTime: halaqa.nextDayRegStartTime || '22:30'
+    });
+  };
+
+  const handleSaveEdit = () => {
+    if (editingHalaqaId) {
+      onUpdateHalaqa(editingHalaqaId, editForm);
+      setEditingHalaqaId(null);
+    }
   };
 
   const handleAddStudent = (e: React.FormEvent) => {
@@ -64,11 +96,10 @@ export function StudentManager({ students, halaqat, onAddHalaqa, onDeleteHalaqa,
           </button>
         </form>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {halaqat.map((halaqa) => (
-            <button
+            <div
               key={halaqa.id}
-              onClick={() => setSelectedHalaqaId(halaqa.id)}
               className={cn(
                 "relative flex flex-col p-4 rounded-xl border transition-all text-right",
                 selectedHalaqaId === halaqa.id
@@ -76,20 +107,79 @@ export function StudentManager({ students, halaqat, onAddHalaqa, onDeleteHalaqa,
                   : "bg-white border-slate-200 hover:border-emerald-300"
               )}
             >
-              <span className="text-sm font-bold text-slate-800">{halaqa.name}</span>
-              <span className="text-[10px] text-slate-500 mt-1">
-                {students.filter(s => s.halaqaId === halaqa.id).length} طالبة
-              </span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (confirm('هل أنت متأكد من حذف هذه الحلقة؟ سيتم فصل الطالبات عنها.')) onDeleteHalaqa(halaqa.id);
-                }}
-                className="absolute top-2 left-2 p-1 text-slate-300 hover:text-red-500"
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
-            </button>
+              {editingHalaqaId === halaqa.id ? (
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    className="w-full text-xs font-bold p-1 border rounded bg-white"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[8px] text-slate-400 block mb-0.5">وقت الإغلاق</label>
+                      <input
+                        type="time"
+                        value={editForm.registrationLockTime}
+                        onChange={(e) => setEditForm({ ...editForm, registrationLockTime: e.target.value })}
+                        className="w-full text-[10px] p-1 border rounded bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[8px] text-slate-400 block mb-0.5">فتح اليوم التالي</label>
+                      <input
+                        type="time"
+                        value={editForm.nextDayRegStartTime}
+                        onChange={(e) => setEditForm({ ...editForm, nextDayRegStartTime: e.target.value })}
+                        className="w-full text-[10px] p-1 border rounded bg-white"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={handleSaveEdit} className="bg-emerald-600 text-white p-1 rounded-md shadow-sm">
+                      <Check className="w-3 h-3" />
+                    </button>
+                    <button onClick={() => setEditingHalaqaId(null)} className="bg-slate-200 text-slate-600 p-1 rounded-md">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-bold text-slate-800">{halaqa.name}</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleStartEdit(halaqa)}
+                        className="p-1 text-slate-300 hover:text-emerald-500 transition-all"
+                      >
+                        <Settings2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm('هل أنت متأكد من حذف هذه الحلقة؟')) onDeleteHalaqa(halaqa.id);
+                        }}
+                        className="p-1 text-slate-300 hover:text-red-500"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setSelectedHalaqaId(halaqa.id)}
+                    className="text-right"
+                  >
+                    <div className="text-[10px] text-slate-500">
+                      {students.filter(s => s.halaqaId === halaqa.id).length} طالبة
+                    </div>
+                    <div className="text-[9px] text-emerald-600 mt-1">
+                      {halaqa.registrationLockTime || '19:00'} إغلاق / {halaqa.nextDayRegStartTime || '22:30'} فتح
+                    </div>
+                  </button>
+                </>
+              )}
+            </div>
           ))}
         </div>
       </div>

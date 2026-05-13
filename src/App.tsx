@@ -142,7 +142,16 @@ export default function App() {
       setLoading(false);
     });
 
-    return () => {
+  const getNextWorkingDay = (currentDate: Date) => {
+    let next = addDays(currentDate, 1);
+    // Skip Friday (5) and Saturday (6)
+    while (getDay(next) === 5 || getDay(next) === 6) {
+      next = addDays(next, 1);
+    }
+    return next;
+  };
+
+  return () => {
       unsubscribeHalaqat();
       unsubscribeStudents();
       unsubscribeReports();
@@ -153,15 +162,29 @@ export default function App() {
     if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
 
     try {
-      const today = format(new Date(), 'yyyy-MM-dd');
-      const todayReports = reports.filter(r => r.date === today && r.halaqaId === reportData.halaqaId);
-      // Find the next logical turn order
+      const ksaString = new Date().toLocaleString("en-US", { timeZone: "Asia/Riyadh" });
+      const ksaDate = new Date(ksaString);
+      const ksaHours = ksaDate.getHours();
+      const ksaMinutes = ksaDate.getMinutes();
+      
+      const currentHalaqa = halaqat.find(h => h.id === reportData.halaqaId);
+      const nextDayStart = currentHalaqa?.nextDayRegStartTime || "22:30";
+      const [limitH, limitM] = nextDayStart.split(':').map(Number);
+      
+      let effectiveDate = format(ksaDate, 'yyyy-MM-dd');
+      
+      // If after the specified time, record for the next working day
+      if (ksaHours > limitH || (ksaHours === limitH && ksaMinutes >= limitM)) {
+        effectiveDate = format(getNextWorkingDay(ksaDate), 'yyyy-MM-dd');
+      }
+
+      const todayReports = reports.filter(r => r.date === effectiveDate && r.halaqaId === reportData.halaqaId);
       const maxTurn = todayReports.length > 0 ? Math.max(...todayReports.map(r => r.turnOrder ?? 0)) : 0;
       
       await addDoc(collection(db, 'reports'), {
         ...reportData,
         timestamp: serverTimestamp(),
-        date: today,
+        date: effectiveDate,
         isDeferred: false,
         turnOrder: maxTurn + 1,
       });
@@ -190,14 +213,9 @@ export default function App() {
       let newDate = report.date;
 
       if (isNowDeferred) {
-        // Calculate next working day
+        // Calculate next working day using our helper
         const currentDate = parseISO(report.date);
-        let nextDate = addDays(currentDate, 1);
-        
-        // Skip Friday (5) and Saturday (6)
-        while (getDay(nextDate) === 5 || getDay(nextDate) === 6) {
-          nextDate = addDays(nextDate, 1);
-        }
+        const nextDate = getNextWorkingDay(currentDate);
         newDate = format(nextDate, 'yyyy-MM-dd');
       } else {
         // If un-deferring, move back to actual today
@@ -287,6 +305,16 @@ export default function App() {
     } catch (error) {
       console.error("Error adding halaqa: ", error);
       alert("عذراً، فشل إضافة الحلقة. قد يكون ذلك بسبب قيود في قاعدة البيانات.");
+    }
+  };
+
+  const handleUpdateHalaqa = async (id: string, data: Partial<Halaqa>) => {
+    if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
+    try {
+      await updateDoc(doc(db, 'halaqat', id), data);
+    } catch (error) {
+      console.error("Error updating halaqa: ", error);
+      alert("فشل تحديث إعدادات الحلقة.");
     }
   };
 
@@ -462,6 +490,7 @@ export default function App() {
                            students={students} 
                            halaqat={halaqat}
                            onAddHalaqa={handleAddHalaqa}
+                           onUpdateHalaqa={handleUpdateHalaqa}
                            onDeleteHalaqa={handleDeleteHalaqa}
                            onAdd={handleAddStudent} 
                            onRemove={handleRemoveStudent} 

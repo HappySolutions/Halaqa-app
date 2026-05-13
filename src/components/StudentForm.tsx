@@ -64,17 +64,31 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
 
   const isTimeRestricted = useMemo(() => {
     try {
+      if (!selectedHalaqaId) return false;
+      const currentHalaqa = halaqat.find(h => h.id === selectedHalaqaId);
+      
       const ksaString = new Date().toLocaleString("en-US", { timeZone: "Asia/Riyadh" });
       const ksaDate = new Date(ksaString);
       const ksaHours = ksaDate.getHours();
-      return ksaHours >= 19 && ksaHours < 23;
+      const ksaMinutes = ksaDate.getMinutes();
+
+      // Get times from halaqa or defaults
+      const lockTime = currentHalaqa?.registrationLockTime || "19:00";
+      const nextDayTime = currentHalaqa?.nextDayRegStartTime || "22:30";
+      
+      const [lockH, lockM] = lockTime.split(':').map(Number);
+      const [nextH, nextM] = nextDayTime.split(':').map(Number);
+
+      const currentTimeInMinutes = ksaHours * 60 + ksaMinutes;
+      const lockTimeInMinutes = lockH * 60 + lockM;
+      const nextTimeInMinutes = nextH * 60 + nextM;
+
+      // Restriction: Between lockTime and nextDayTime
+      return currentTimeInMinutes >= lockTimeInMinutes && currentTimeInMinutes < nextTimeInMinutes;
     } catch (e) {
-      const now = new Date();
-      const utcHours = now.getUTCHours();
-      const ksaHours = (utcHours + 3) % 24;
-      return ksaHours >= 19 && ksaHours < 23;
+      return false;
     }
-  }, []);
+  }, [selectedHalaqaId, halaqat]);
 
   const handleStartEdit = (report: Report) => {
     setSelectedHalaqaId(report.halaqaId);
@@ -179,7 +193,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
             <h2 className="text-2xl font-bold text-slate-800 mb-2">التسجيل مغلق الآن</h2>
             <p className="text-slate-500 leading-relaxed">
               عذراً، لا يمكن استقبال البطاقات في الوقت الحالي.<br />
-              فترة التوقف اليومية: من <span className="font-bold">7:00 مساءً</span> حتى <span className="font-bold">11:00 مساءً</span> بتوقيت مكة المكرمة.
+              فترة التوقف لهذه الحلقة: من <span className="font-bold">{halaqat.find(h => h.id === selectedHalaqaId)?.registrationLockTime || '7:00 مساءً'}</span> حتى <span className="font-bold">{halaqat.find(h => h.id === selectedHalaqaId)?.nextDayRegStartTime || '10:30 مساءً'}</span> بتوقيت مكة المكرمة.
             </p>
             <button 
               onClick={() => setSelectedHalaqaId(null)}

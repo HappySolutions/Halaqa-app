@@ -3,6 +3,8 @@ export interface Halaqa {
   name: string;
   teacherName?: string;
   timestamp?: number;
+  registrationLockTime?: string; // e.g. "19:00"
+  nextDayRegStartTime?: string; // e.g. "22:30"
 }
 
 export interface Student {
