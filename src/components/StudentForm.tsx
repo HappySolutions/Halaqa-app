@@ -107,6 +107,18 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleChangeHalaqa = () => {
+    setSelectedHalaqaId(null);
+    setStudentId('');
+    setEditingReportId(null);
+    setSearchTerm('');
+    setPages(0);
+    setSurahs('');
+    setIsAbsent(false);
+    setAbsenceReason('');
+    setHasReviewed(true);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!studentId || isTimeRestricted || !selectedHalaqaId) return;
@@ -201,7 +213,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
               فترة التوقف لهذه الحلقة: من <span className="font-bold">{halaqat.find(h => h.id === selectedHalaqaId)?.registrationLockTime || '7:00 مساءً'}</span> حتى <span className="font-bold">{halaqat.find(h => h.id === selectedHalaqaId)?.nextDayRegStartTime || '10:30 مساءً'}</span> بتوقيت مكة المكرمة.
             </p>
             <button 
-              onClick={() => setSelectedHalaqaId(null)}
+              onClick={handleChangeHalaqa}
               className="mt-6 text-sm text-amber-700 font-bold hover:underline"
             >
               العودة لاختيار الحلقة
@@ -243,7 +255,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
               {!editingReportId && (
                 <button
                   type="button"
-                  onClick={() => setSelectedHalaqaId(null)}
+                  onClick={handleChangeHalaqa}
                   className="text-xs text-slate-400 hover:text-emerald-600 transition-colors"
                 >
                   تغيير الحلقة
