@@ -88,9 +88,10 @@ export function AdminPanel({
   };
 
   const generateWhatsAppText = () => {
-    const todayDate = new Date();
-    const dayName = format(todayDate, 'EEEE', { locale: ar });
     const currentHalaqa = halaqat.find(h => h.id === selectedHalaqaId);
+    const effectiveDateStr = getEffectiveDateForHalaqa(currentHalaqa);
+    const todayDate = new Date(effectiveDateStr); // Use the effective date for the report
+    const dayName = format(todayDate, 'EEEE', { locale: ar });
 
     const hijriFormatter = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
       day: '2-digit',
