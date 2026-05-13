@@ -52,12 +52,16 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
     students.find(s => s.id === studentId),
     [students, studentId]);
 
+  const currentEffectiveDate = useMemo(() => {
+    if (!selectedHalaqaId) return format(new Date(), 'yyyy-MM-dd');
+    const currentHalaqa = halaqat.find(h => h.id === selectedHalaqaId);
+    return getEffectiveDateForHalaqa(currentHalaqa);
+  }, [selectedHalaqaId, halaqat]);
+
   const existingReport = useMemo(() => {
     if (!studentId || !selectedHalaqaId) return null;
-    const currentHalaqa = halaqat.find(h => h.id === selectedHalaqaId);
-    const effectiveDate = getEffectiveDateForHalaqa(currentHalaqa);
-    return reports.find(r => r.studentId === studentId && r.date === effectiveDate);
-  }, [studentId, reports, selectedHalaqaId, halaqat]);
+    return reports.find(r => r.studentId === studentId && r.date === currentEffectiveDate);
+  }, [studentId, reports, selectedHalaqaId, currentEffectiveDate]);
 
   const isDuplicate = useMemo(() => {
     return !!existingReport && !editingReportId;
@@ -493,7 +497,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
 
           <div className="space-y-3">
             {reports
-              .filter(r => r.date === format(new Date(), 'yyyy-MM-dd') && r.halaqaId === selectedHalaqaId)
+              .filter(r => r.date === currentEffectiveDate && r.halaqaId === selectedHalaqaId)
               .sort((a, b) => {
                 if (a.isAbsent !== b.isAbsent) return a.isAbsent ? 1 : -1;
                 const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
@@ -544,7 +548,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
                 </motion.div>
               ))}
             
-            {reports.filter(r => r.date === format(new Date(), 'yyyy-MM-dd') && r.halaqaId === selectedHalaqaId).length === 0 && (
+            {reports.filter(r => r.date === currentEffectiveDate && r.halaqaId === selectedHalaqaId).length === 0 && (
               <div className="text-center py-10 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
                 <p className="text-sm text-slate-400 italic">لم يتم تسجيل أي طالبة في هذه الحلقة بعد</p>
               </div>
