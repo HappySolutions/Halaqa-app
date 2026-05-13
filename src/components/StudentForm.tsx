@@ -503,7 +503,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
               قائمة مسجلات {halaqat.find(h => h.id === selectedHalaqaId)?.name}
             </h3>
             <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full">
-              {reports.filter(r => r.date === format(new Date(), 'yyyy-MM-dd') && r.halaqaId === selectedHalaqaId).length} طالبة
+              {reports.filter(r => r.date === currentEffectiveDate && r.halaqaId === selectedHalaqaId).length} طالبة
             </span>
           </div>
 
