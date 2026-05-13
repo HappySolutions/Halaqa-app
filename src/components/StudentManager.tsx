@@ -11,12 +11,14 @@ interface StudentManagerProps {
   onDeleteHalaqa: (id: string) => void;
   onAdd: (name: string, halaqaId: string) => void;
   onRemove: (id: string) => void;
+  onImport: (halaqaId: string) => void;
 }
 
-export function StudentManager({ students, halaqat, onAddHalaqa, onDeleteHalaqa, onAdd, onRemove }: StudentManagerProps) {
+export function StudentManager({ students, halaqat, onAddHalaqa, onDeleteHalaqa, onAdd, onRemove, onImport }: StudentManagerProps) {
   const [newHalaqaName, setNewHalaqaName] = useState('');
   const [newStudentName, setNewStudentName] = useState('');
   const [selectedHalaqaId, setSelectedHalaqaId] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   const handleAddHalaqa = (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,6 +131,23 @@ export function StudentManager({ students, halaqat, onAddHalaqa, onDeleteHalaqa,
                 <Plus className="w-5 h-5" />
               </button>
             </form>
+
+            {filteredStudents.length === 0 && (
+              <div className="mb-8 p-6 border-2 border-dashed border-emerald-100 rounded-2xl bg-emerald-50/30 text-center">
+                <p className="text-sm text-slate-600 mb-4 font-medium">هذه الحلقة لا تحتوي على طالبات حالياً. هل ترغبين في استيراد القائمة السابقة؟</p>
+                <button
+                  onClick={async () => {
+                    setIsImporting(true);
+                    await onImport(selectedHalaqaId);
+                    setIsImporting(false);
+                  }}
+                  disabled={isImporting}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-2 mx-auto disabled:opacity-50"
+                >
+                  {isImporting ? 'جاري الاستيراد...' : 'استيراد القائمة السابقة (52 اسم)'}
+                </button>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {filteredStudents.map((student) => (

@@ -312,6 +312,33 @@ export default function App() {
     }
   };
 
+  const handleImportStudents = async (halaqaId: string) => {
+    if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
+    const names = [
+      "أروى السماني", "أسماء العسكري", "أسماء علي صالح", "أمل بلال الشهاري", "آية حسن محمد", "آية محمد عطيه", 
+      "إيمان فوزي علي", "إيمان محمد المجيدي", "بحريه العنزي", "بشرى يوسف الحريري", "تقي حسن", "حسناء سويدان", 
+      "حواء مهدي هارون", "خوله عبدالله", "رشا عمر لكبودي", "رميساء قليدو", "زكيه محمد هوساوي", "ساره البلوي", 
+      "ساره عبده عمر", "ساره مساعد", "ساره يوسف حسن", "ستنا الامين احمد", "سلام عبد السلام نوفل", "سلمي حافظ", 
+      "سميحه الحداد", "سميه يوجين اكرام", "شيخه سعيد المدحاني", "شيرين سامي", "ضحى يوسف بخش", "عبير احمد", 
+      "عبير الصعب", "عهود ثامر سياف", "فاطمة الربيع", "كوثر جمال الظاهر", "لطيفة العقيل", "لطيفة المطيري", 
+      "لمار بصفر", "لينا قرشي", "مؤتة صالح", "مريم سلطان", "مريم مصطفى عمر", "مريم ميرغني", "منى سليمان محمد", 
+      "مي حامد سعد", "ميادة نجم عبدالله", "نادية الشلالي", "نوف ثابت", "هاجر محمد جبري احمد", "هبة عبد الماجد", 
+      "هدير حامد صقر", "هيفاء عادل", "وعد عمر القلعاوي"
+    ];
+    
+    try {
+      for (let i = 0; i < names.length; i++) {
+        await addDoc(collection(db, 'students'), { 
+          name: names[i],
+          halaqaId,
+          order: i
+        });
+      }
+    } catch (error) {
+      console.error("Error importing students: ", error);
+    }
+  };
+
   const handleRemoveStudent = async (id: string) => {
     if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
     try {
@@ -440,6 +467,7 @@ export default function App() {
                            onDeleteHalaqa={handleDeleteHalaqa}
                            onAdd={handleAddStudent} 
                            onRemove={handleRemoveStudent} 
+                           onImport={handleImportStudents}
                          />
                       </motion.div>
                     )}
