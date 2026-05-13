@@ -200,7 +200,6 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
                         "w-1.5 h-1.5 rounded-full",
                         report.isAbsent ? "bg-red-500" : (report.hasReviewed ? "bg-emerald-500" : "bg-slate-300")
                       )} />
-                      <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1 rounded">#{report.turnOrder ?? '-'}</span>
                       <span className="font-bold text-slate-800 text-sm">{report.studentName}</span>
                       {report.isAbsent && <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-md font-bold">غائبة</span>}
                     </div>
@@ -216,23 +215,16 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
                             />
                             طالبة غائبة
                           </label>
-                          <div className="flex items-center gap-1 bg-slate-100 px-2 py-1 border border-slate-200 rounded">
-                            <span className="text-[10px] text-slate-500 font-bold">رقم الدور:</span>
-                             <input
+                          <div className="flex items-center gap-1 bg-emerald-50 px-2 py-1 border border-emerald-100 rounded">
+                            <span className="text-[10px] text-emerald-700 font-bold">
+                              {editForm.isAbsent ? 'ترتيبها في كشف الغائبات:' : 'ترتيبها في كشف الحاضرات:'}
+                            </span>
+                            <input
                               type="number"
                               value={editForm.turnOrder}
                               onChange={(e) => setEditForm({ ...editForm, turnOrder: parseInt(e.target.value) || 0 })}
-                              className="w-10 text-[10px] font-bold text-center bg-transparent border-none outline-none"
+                              className="w-10 text-[10px] font-bold text-center bg-transparent border-none outline-none text-emerald-800"
                             />
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-[9px] text-slate-400">الترتيب الكلي: {index + 1}</span>
-                            <span className="text-[9px] text-emerald-600 font-bold">
-                              {report.isAbsent 
-                                ? `ترتيبها بين الغائبات: ${todayReports.filter(r => r.isAbsent).findIndex(r => r.id === report.id) + 1}`
-                                : `ترتيبها بين الحاضرات: ${todayReports.filter(r => !r.isAbsent).findIndex(r => r.id === report.id) + 1}`
-                              }
-                            </span>
                           </div>
                         </div>
 
