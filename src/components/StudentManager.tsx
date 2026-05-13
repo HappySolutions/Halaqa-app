@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, UserPlus, Users, LayoutGrid, Settings2, Check, X } from 'lucide-react';
+import { Plus, Trash2, UserPlus, Users, LayoutGrid, Settings2, Check, X, Pencil } from 'lucide-react';
 import { Student, Halaqa } from '@/types';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,7 @@ interface StudentManagerProps {
   onDeleteHalaqa: (id: string) => void;
   onAdd: (name: string, halaqaId: string) => void;
   onRemove: (id: string) => void;
+  onUpdateStudent: (id: string, name: string) => void;
   onBulkAdd: (halaqaId: string, names: string[]) => void;
 }
 
@@ -22,19 +23,27 @@ export function StudentManager({
   onUpdateHalaqa,
   onDeleteHalaqa, 
   onAdd, 
-  onRemove, 
+  onRemove,
+  onUpdateStudent,
   onBulkAdd 
 }: StudentManagerProps) {
   const [newHalaqaName, setNewHalaqaName] = useState('');
   const [newStudentName, setNewStudentName] = useState('');
   const [bulkText, setBulkText] = useState('');
   const [selectedHalaqaId, setSelectedHalaqaId] = useState<string | null>(null);
+  
+  // Halaqa Editing State
   const [editingHalaqaId, setEditingHalaqaId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
     name: '',
     registrationLockTime: '19:00',
     nextDayRegStartTime: '22:30'
   });
+
+  // Student Editing State
+  const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
+  const [editStudentName, setEditStudentName] = useState('');
+
   const [isImporting, setIsImporting] = useState(false);
   const [showBulkAdd, setShowBulkAdd] = useState(false);
 
@@ -45,7 +54,7 @@ export function StudentManager({
     setNewHalaqaName('');
   };
 
-  const handleStartEdit = (halaqa: Halaqa) => {
+  const handleStartEditHalaqa = (halaqa: Halaqa) => {
     setEditingHalaqaId(halaqa.id);
     setEditForm({
       name: halaqa.name,
@@ -54,10 +63,22 @@ export function StudentManager({
     });
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEditHalaqa = () => {
     if (editingHalaqaId) {
       onUpdateHalaqa(editingHalaqaId, editForm);
       setEditingHalaqaId(null);
+    }
+  };
+
+  const handleStartEditStudent = (student: Student) => {
+    setEditingStudentId(student.id);
+    setEditStudentName(student.name);
+  };
+
+  const handleSaveEditStudent = (id: string) => {
+    if (editStudentName.trim()) {
+      onUpdateStudent(id, editStudentName.trim());
+      setEditingStudentId(null);
     }
   };
 
@@ -136,7 +157,7 @@ export function StudentManager({
                     </div>
                   </div>
                   <div className="flex gap-2 pt-1">
-                    <button onClick={handleSaveEdit} className="bg-emerald-600 text-white p-1 rounded-md shadow-sm">
+                    <button onClick={handleSaveEditHalaqa} className="bg-emerald-600 text-white p-1 rounded-md shadow-sm">
                       <Check className="w-3 h-3" />
                     </button>
                     <button onClick={() => setEditingHalaqaId(null)} className="bg-slate-200 text-slate-600 p-1 rounded-md">
@@ -150,7 +171,7 @@ export function StudentManager({
                     <span className="text-sm font-bold text-slate-800">{halaqa.name}</span>
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => handleStartEdit(halaqa)}
+                        onClick={() => handleStartEditHalaqa(halaqa)}
                         className="p-1 text-slate-300 hover:text-emerald-500 transition-all"
                       >
                         <Settings2 className="w-3.5 h-3.5" />
@@ -271,13 +292,44 @@ export function StudentManager({
                   key={student.id}
                   className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100 group"
                 >
-                  <span className="text-slate-700 text-sm font-medium">{student.name}</span>
-                  <button
-                    onClick={() => onRemove(student.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-500 transition-all"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {editingStudentId === student.id ? (
+                    <div className="flex items-center gap-2 w-full">
+                      <input
+                        autoFocus
+                        type="text"
+                        value={editStudentName}
+                        onChange={(e) => setEditStudentName(e.target.value)}
+                        className="flex-1 bg-white border border-emerald-300 rounded-lg px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20"
+                        onKeyDown={(e) => e.key === 'Enter' && handleSaveEditStudent(student.id)}
+                      />
+                      <button onClick={() => handleSaveEditStudent(student.id)} className="text-emerald-600">
+                        <Check className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => setEditingStudentId(null)} className="text-slate-400">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="text-slate-700 text-sm font-medium">{student.name}</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleStartEditStudent(student)}
+                          className="p-1 text-slate-400 hover:text-emerald-600 transition-all"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm('هل أنت متأكد من حذف هذه الطالبة؟')) onRemove(student.id);
+                          }}
+                          className="p-1 text-slate-400 hover:text-red-500 transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </motion.div>
               ))}
             </div>

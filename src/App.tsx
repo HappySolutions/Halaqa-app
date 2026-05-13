@@ -41,6 +41,15 @@ export default function App() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const getNextWorkingDay = (currentDate: Date) => {
+    let next = addDays(currentDate, 1);
+    // Skip Friday (5) and Saturday (6)
+    while (getDay(next) === 5 || getDay(next) === 6) {
+      next = addDays(next, 1);
+    }
+    return next;
+  };
+
   // Handle Admin Login
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,16 +151,7 @@ export default function App() {
       setLoading(false);
     });
 
-  const getNextWorkingDay = (currentDate: Date) => {
-    let next = addDays(currentDate, 1);
-    // Skip Friday (5) and Saturday (6)
-    while (getDay(next) === 5 || getDay(next) === 6) {
-      next = addDays(next, 1);
-    }
-    return next;
-  };
-
-  return () => {
+    return () => {
       unsubscribeHalaqat();
       unsubscribeStudents();
       unsubscribeReports();
@@ -374,6 +374,15 @@ export default function App() {
     }
   };
 
+  const handleUpdateStudent = async (id: string, name: string) => {
+    if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
+    try {
+      await updateDoc(doc(db, 'students', id), { name });
+    } catch (error) {
+      console.error("Error updating student: ", error);
+    }
+  };
+
   if (loading && import.meta.env.VITE_FIREBASE_PROJECT_ID) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -494,6 +503,7 @@ export default function App() {
                            onDeleteHalaqa={handleDeleteHalaqa}
                            onAdd={handleAddStudent} 
                            onRemove={handleRemoveStudent} 
+                           onUpdateStudent={handleUpdateStudent}
                            onBulkAdd={handleBulkAddStudents}
                          />
                       </motion.div>
