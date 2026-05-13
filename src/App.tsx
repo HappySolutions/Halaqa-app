@@ -252,9 +252,6 @@ export default function App() {
     }
   };
 
-    }
-  };
-
   const handleReorderReports = async (reportId: string, direction: 'up' | 'down') => {
     if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
     
