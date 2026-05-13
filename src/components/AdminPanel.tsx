@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Clipboard, Trash2, Users, Check } from 'lucide-react';
+import { Clipboard, Trash2, Users, Check, ChevronUp, ChevronDown } from 'lucide-react';
 import { Report, Student } from '@/types';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -12,10 +12,11 @@ interface AdminPanelProps {
   onDeleteReport: (id: string) => void;
   onToggleDeferred: (id: string) => void;
   onUpdateReport: (id: string, data: any) => void;
+  onReorderReports: (id: string, direction: 'up' | 'down') => void;
   onClearAll: () => void;
 }
 
-export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred, onUpdateReport, onClearAll }: AdminPanelProps) {
+export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred, onUpdateReport, onReorderReports, onClearAll }: AdminPanelProps) {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editForm, setEditForm] = React.useState({ surahs: '', pagesReviewed: 0, hasReviewed: false });
   const today = format(new Date(), 'yyyy-MM-dd');
@@ -23,7 +24,7 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
   const todayReports = useMemo(() => {
     return reports
       .filter(r => r.date === today)
-      .sort((a, b) => a.timestamp - b.timestamp); // Oldest first (first registered first)
+      .sort((a, b) => (a.turnOrder ?? a.timestamp) - (b.turnOrder ?? b.timestamp));
   }, [reports, today]);
 
   const stats = useMemo(() => {
@@ -160,7 +161,7 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
           </div>
 
           <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-            {todayReports.map((report) => (
+            {todayReports.map((report, index) => (
               <motion.div
                 layout
                 key={report.id}
@@ -214,6 +215,23 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
                         {report.isAbsent ? (report.absenceReason || 'لا يوجد عذر') : `${report.pagesReviewed} وجه - ${report.surahs}`}
                       </div>
                     )}
+                  </div>
+
+                  <div className="flex flex-col ml-2">
+                    <button
+                      onClick={() => onReorderReports(report.id, 'up')}
+                      disabled={index === 0}
+                      className="p-0.5 text-slate-300 hover:text-emerald-500 disabled:opacity-0 transition-all"
+                    >
+                      <ChevronUp className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => onReorderReports(report.id, 'down')}
+                      disabled={index === todayReports.length - 1}
+                      className="p-0.5 text-slate-300 hover:text-emerald-500 disabled:opacity-0 transition-all"
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
                   </div>
 
                   <div className="flex items-center gap-1 transition-all">

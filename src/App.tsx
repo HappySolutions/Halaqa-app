@@ -124,8 +124,16 @@ export default function App() {
           timestamp: data.timestamp?.toMillis ? data.timestamp.toMillis() : (data.timestamp ?? 0)
         } as Report);
       });
-      // Sort newest first client-side
-      reportsData.sort((a, b) => b.timestamp - a.timestamp);
+      // Sort: Today's reports by turnOrder, then timestamp. Older reports by timestamp.
+      reportsData.sort((a, b) => {
+        if (a.date === b.date) {
+          if (a.turnOrder !== undefined && b.turnOrder !== undefined) {
+            return a.turnOrder - b.turnOrder;
+          }
+          return a.timestamp - b.timestamp;
+        }
+        return b.timestamp - a.timestamp;
+      });
       setReports(reportsData);
       setLoading(false);
     }, (error) => {
@@ -143,11 +151,15 @@ export default function App() {
     if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
 
     try {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const todayReportsCount = reports.filter(r => r.date === today).length;
+      
       await addDoc(collection(db, 'reports'), {
         ...reportData,
         timestamp: serverTimestamp(),
-        date: format(new Date(), 'yyyy-MM-dd'),
+        date: today,
         isDeferred: false,
+        turnOrder: todayReportsCount + 1,
       });
     } catch (error) {
       console.error("Error adding report: ", error);
@@ -240,25 +252,35 @@ export default function App() {
     }
   };
 
-  const handleReorderStudents = async (studentId: string, direction: 'up' | 'down') => {
+    }
+  };
+
+  const handleReorderReports = async (reportId: string, direction: 'up' | 'down') => {
     if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
     
-    const currentIndex = students.findIndex(s => s.id === studentId);
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const todayReports = reports
+      .filter(r => r.date === today)
+      .sort((a, b) => (a.turnOrder ?? a.timestamp) - (b.turnOrder ?? b.timestamp));
+    
+    const currentIndex = todayReports.findIndex(r => r.id === reportId);
     if (currentIndex === -1) return;
     
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    if (targetIndex < 0 || targetIndex >= students.length) return;
+    if (targetIndex < 0 || targetIndex >= todayReports.length) return;
     
-    const currentStudent = students[currentIndex];
-    const targetStudent = students[targetIndex];
+    const currentReport = todayReports[currentIndex];
+    const targetReport = todayReports[targetIndex];
     
     try {
-      // Swap orders
-      const tempOrder = currentStudent.order;
-      await updateDoc(doc(db, 'students', currentStudent.id), { order: targetStudent.order });
-      await updateDoc(doc(db, 'students', targetStudent.id), { order: tempOrder });
+      // If turnOrder doesn't exist, initialize them based on current position
+      const currentOrder = currentReport.turnOrder ?? (currentIndex + 1);
+      const targetOrder = targetReport.turnOrder ?? (targetIndex + 1);
+      
+      await updateDoc(doc(db, 'reports', currentReport.id), { turnOrder: targetOrder });
+      await updateDoc(doc(db, 'reports', targetReport.id), { turnOrder: currentOrder });
     } catch (error) {
-      console.error("Error reordering students: ", error);
+      console.error("Error reordering reports: ", error);
     }
   };
 
@@ -362,6 +384,7 @@ export default function App() {
                     onDeleteReport={handleDeleteReport}
                     onToggleDeferred={handleToggleDeferred}
                     onUpdateReport={handleUpdateReport}
+                    onReorderReports={handleReorderReports}
                     onClearAll={handleClearToday}
                   />
                   
@@ -380,11 +403,10 @@ export default function App() {
                         animate={{ height: 'auto', opacity: 1 }}
                         className="overflow-hidden mt-4"
                       >
-                        <StudentManager 
+                         <StudentManager 
                           students={students} 
                           onAdd={handleAddStudent} 
                           onRemove={handleRemoveStudent} 
-                          onReorder={handleReorderStudents}
                         />
                       </motion.div>
                     )}

@@ -17,6 +17,7 @@ export interface Report {
   absenceReason?: string;
   timestamp: number;
   date: string; // YYYY-MM-DD
+  turnOrder?: number;
 }
 
 export type UpdateReportData = Partial<Omit<Report, 'id' | 'studentId' | 'studentName'>>;
