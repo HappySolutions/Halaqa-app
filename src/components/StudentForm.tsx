@@ -439,8 +439,8 @@ export function StudentForm({ students, reports, onSubmit, onUpdate }: StudentFo
           {reports
             .filter(r => r.date === format(new Date(), 'yyyy-MM-dd'))
             .sort((a, b) => {
-              const valA = a.turnOrder !== undefined ? a.turnOrder : a.timestamp;
-              const valB = b.turnOrder !== undefined ? b.turnOrder : b.timestamp;
+              const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
+              const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
               return valA - valB;
             })
             .map((r, index) => (

@@ -124,11 +124,11 @@ export default function App() {
           timestamp: data.timestamp?.toMillis ? data.timestamp.toMillis() : (data.timestamp ?? 0)
         } as Report);
       });
-      // Sort: Today's reports by turnOrder (fallback to timestamp), then date.
+      // Sort: Today's reports by turnOrder (manual) then timestamp (auto).
       reportsData.sort((a, b) => {
         if (a.date === b.date) {
-          const valA = a.turnOrder !== undefined ? a.turnOrder : a.timestamp;
-          const valB = b.turnOrder !== undefined ? b.turnOrder : b.timestamp;
+          const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
+          const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
           return valA - valB;
         }
         return b.timestamp - a.timestamp;
@@ -152,14 +152,15 @@ export default function App() {
     try {
       const today = format(new Date(), 'yyyy-MM-dd');
       const todayReports = reports.filter(r => r.date === today);
-      const maxTurnOrder = todayReports.length > 0 ? Math.max(...todayReports.map(r => r.turnOrder ?? 0)) : 0;
+      // Find the next logical turn order
+      const maxTurn = todayReports.length > 0 ? Math.max(...todayReports.map(r => r.turnOrder ?? 0)) : 0;
       
       await addDoc(collection(db, 'reports'), {
         ...reportData,
         timestamp: serverTimestamp(),
         date: today,
         isDeferred: false,
-        turnOrder: maxTurnOrder + 1,
+        turnOrder: maxTurn + 1,
       });
     } catch (error) {
       console.error("Error adding report: ", error);
@@ -247,6 +248,30 @@ export default function App() {
       });
     } catch (error) {
       console.error("Error adding student: ", error);
+    }
+  };
+
+  const handleResequenceReports = async () => {
+    if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
+    
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const todayReports = reports
+      .filter(r => r.date === today)
+      .sort((a, b) => {
+        const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
+        const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
+        return valA - valB;
+      });
+      
+    try {
+      for (let i = 0; i < todayReports.length; i++) {
+        const report = todayReports[i];
+        if (report.turnOrder !== i + 1) {
+          await updateDoc(doc(db, 'reports', report.id), { turnOrder: i + 1 });
+        }
+      }
+    } catch (error) {
+      console.error("Error resequencing reports: ", error);
     }
   };
 
@@ -350,6 +375,7 @@ export default function App() {
                     onDeleteReport={handleDeleteReport}
                     onToggleDeferred={handleToggleDeferred}
                     onUpdateReport={handleUpdateReport}
+                    onResequenceReports={handleResequenceReports}
                     onClearAll={handleClearToday}
                   />
                   

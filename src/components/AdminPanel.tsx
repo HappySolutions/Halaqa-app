@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Clipboard, Trash2, Users, Check } from 'lucide-react';
+import { Clipboard, Trash2, Users, Check, RefreshCcw } from 'lucide-react';
 import { Report, Student } from '@/types';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -12,10 +12,11 @@ interface AdminPanelProps {
   onDeleteReport: (id: string) => void;
   onToggleDeferred: (id: string) => void;
   onUpdateReport: (id: string, data: any) => void;
+  onResequenceReports: () => void;
   onClearAll: () => void;
 }
 
-export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred, onUpdateReport, onClearAll }: AdminPanelProps) {
+export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred, onUpdateReport, onResequenceReports, onClearAll }: AdminPanelProps) {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editForm, setEditForm] = React.useState({ 
     surahs: '', 
@@ -31,8 +32,8 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
     return reports
       .filter(r => r.date === today)
       .sort((a, b) => {
-        const valA = a.turnOrder !== undefined ? a.turnOrder : a.timestamp;
-        const valB = b.turnOrder !== undefined ? b.turnOrder : b.timestamp;
+        const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
+        const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
         return valA - valB;
       });
   }, [reports, today]);
@@ -163,14 +164,26 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
               <Clipboard className="w-5 h-5 text-emerald-600" />
               إدارة تقارير اليوم
             </h3>
-            <button
-              onClick={() => {
-                if (confirm('هل أنت متأكد من حذف جميع تقارير اليوم؟')) onClearAll();
-              }}
-              className="p-2 text-slate-300 hover:text-red-500 transition-all"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => {
+                  if (confirm('سيتم إعادة ترتيب جميع الطالبات من 1 إلى النهاية لتسهيل التعديل. هل أنتِ متأكدة؟')) onResequenceReports();
+                }}
+                className="p-2 text-slate-300 hover:text-emerald-500 transition-all"
+                title="إعادة تسلسل الأرقام"
+              >
+                <RefreshCcw className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => {
+                  if (confirm('هل أنت متأكد من حذف جميع تقارير اليوم؟')) onClearAll();
+                }}
+                className="p-2 text-slate-300 hover:text-red-500 transition-all"
+                title="حذف الكل"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
@@ -211,6 +224,7 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
                               className="w-10 text-[10px] font-bold text-center bg-transparent border-none outline-none"
                             />
                           </div>
+                          <span className="text-[9px] text-slate-400">الترتيب الحالي: {index + 1}</span>
                         </div>
 
                         {editForm.isAbsent ? (
