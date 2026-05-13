@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Check, Send, User, Search, ChevronDown, X, AlertCircle, Users, LayoutGrid } from 'lucide-react';
 import { Student, Report, Halaqa } from '@/types';
-import { cn } from '@/lib/utils';
+import { cn, getEffectiveDateForHalaqa } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 
@@ -53,10 +53,11 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
     [students, studentId]);
 
   const existingReport = useMemo(() => {
-    if (!studentId) return null;
-    const today = format(new Date(), 'yyyy-MM-dd');
-    return reports.find(r => r.studentId === studentId && r.date === today);
-  }, [studentId, reports]);
+    if (!studentId || !selectedHalaqaId) return null;
+    const currentHalaqa = halaqat.find(h => h.id === selectedHalaqaId);
+    const effectiveDate = getEffectiveDateForHalaqa(currentHalaqa);
+    return reports.find(r => r.studentId === studentId && r.date === effectiveDate);
+  }, [studentId, reports, selectedHalaqaId, halaqat]);
 
   const isDuplicate = useMemo(() => {
     return !!existingReport && !editingReportId;

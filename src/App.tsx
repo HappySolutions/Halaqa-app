@@ -9,7 +9,8 @@ import { StudentForm } from './components/StudentForm';
 import { AdminPanel } from './components/AdminPanel';
 import { StudentManager } from './components/StudentManager';
 import { Report, Student, Halaqa, UpdateReportData } from './types';
-import { format, addDays, getDay, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
+import { getEffectiveDateForHalaqa, getNextWorkingDay } from './lib/utils';
 import { Settings, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
@@ -40,15 +41,6 @@ export default function App() {
   const [students, setStudents] = useState<Student[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const getNextWorkingDay = (currentDate: Date) => {
-    let next = addDays(currentDate, 1);
-    // Skip Friday (5) and Saturday (6)
-    while (getDay(next) === 5 || getDay(next) === 6) {
-      next = addDays(next, 1);
-    }
-    return next;
-  };
 
   // Handle Admin Login
   const handleAdminLogin = (e: React.FormEvent) => {
@@ -162,21 +154,8 @@ export default function App() {
     if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
 
     try {
-      const ksaString = new Date().toLocaleString("en-US", { timeZone: "Asia/Riyadh" });
-      const ksaDate = new Date(ksaString);
-      const ksaHours = ksaDate.getHours();
-      const ksaMinutes = ksaDate.getMinutes();
-      
       const currentHalaqa = halaqat.find(h => h.id === reportData.halaqaId);
-      const nextDayStart = currentHalaqa?.nextDayRegStartTime || "22:30";
-      const [limitH, limitM] = nextDayStart.split(':').map(Number);
-      
-      let effectiveDate = format(ksaDate, 'yyyy-MM-dd');
-      
-      // If after the specified time, record for the next working day
-      if (ksaHours > limitH || (ksaHours === limitH && ksaMinutes >= limitM)) {
-        effectiveDate = format(getNextWorkingDay(ksaDate), 'yyyy-MM-dd');
-      }
+      const effectiveDate = getEffectiveDateForHalaqa(currentHalaqa);
 
       const todayReports = reports.filter(r => r.date === effectiveDate && r.halaqaId === reportData.halaqaId);
       const maxTurn = todayReports.length > 0 ? Math.max(...todayReports.map(r => r.turnOrder ?? 0)) : 0;

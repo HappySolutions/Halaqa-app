@@ -3,7 +3,7 @@ import { Clipboard, Trash2, Users, Check, RefreshCcw, LayoutGrid } from 'lucide-
 import { Report, Student, Halaqa } from '@/types';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { cn, getEffectiveDateForHalaqa } from '@/lib/utils';
 import { motion } from 'motion/react';
 
 interface AdminPanelProps {
@@ -38,8 +38,6 @@ export function AdminPanel({
     turnOrder: 0
   });
 
-  const today = format(new Date(), 'yyyy-MM-dd');
-
   // Set default selected halaqa
   React.useEffect(() => {
     if (!selectedHalaqaId && halaqat.length > 0) {
@@ -48,15 +46,18 @@ export function AdminPanel({
   }, [halaqat, selectedHalaqaId]);
 
   const todayReports = useMemo(() => {
+    const currentHalaqa = halaqat.find(h => h.id === selectedHalaqaId);
+    const effectiveDate = getEffectiveDateForHalaqa(currentHalaqa);
+
     return reports
-      .filter(r => r.date === today && r.halaqaId === selectedHalaqaId)
+      .filter(r => r.date === effectiveDate && r.halaqaId === selectedHalaqaId)
       .sort((a, b) => {
         if (a.isAbsent !== b.isAbsent) return a.isAbsent ? 1 : -1;
         const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
         const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
         return valA - valB;
       });
-  }, [reports, today, selectedHalaqaId]);
+  }, [reports, selectedHalaqaId, halaqat]);
 
   const stats = useMemo(() => {
     const halaqaStudents = students.filter(s => s.halaqaId === selectedHalaqaId);
