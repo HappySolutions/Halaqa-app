@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
-import { Clipboard, Trash2, Users, Check, RefreshCcw } from 'lucide-react';
-import { Report, Student } from '@/types';
+import React, { useMemo, useState } from 'react';
+import { Clipboard, Trash2, Users, Check, RefreshCcw, LayoutGrid } from 'lucide-react';
+import { Report, Student, Halaqa } from '@/types';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -9,16 +9,27 @@ import { motion } from 'motion/react';
 interface AdminPanelProps {
   reports: Report[];
   students: Student[];
+  halaqat: Halaqa[];
   onDeleteReport: (id: string) => void;
   onToggleDeferred: (id: string) => void;
   onUpdateReport: (id: string, data: any) => void;
-  onResequenceReports: () => void;
+  onResequenceReports: (halaqaId: string) => void;
   onClearAll: () => void;
 }
 
-export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred, onUpdateReport, onResequenceReports, onClearAll }: AdminPanelProps) {
-  const [editingId, setEditingId] = React.useState<string | null>(null);
-  const [editForm, setEditForm] = React.useState({ 
+export function AdminPanel({ 
+  reports, 
+  students, 
+  halaqat,
+  onDeleteReport, 
+  onToggleDeferred, 
+  onUpdateReport, 
+  onResequenceReports, 
+  onClearAll 
+}: AdminPanelProps) {
+  const [selectedHalaqaId, setSelectedHalaqaId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ 
     surahs: '', 
     pagesReviewed: 0, 
     hasReviewed: false,
@@ -26,28 +37,37 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
     absenceReason: '',
     turnOrder: 0
   });
+
   const today = format(new Date(), 'yyyy-MM-dd');
+
+  // Set default selected halaqa
+  React.useEffect(() => {
+    if (!selectedHalaqaId && halaqat.length > 0) {
+      setSelectedHalaqaId(halaqat[0].id);
+    }
+  }, [halaqat, selectedHalaqaId]);
 
   const todayReports = useMemo(() => {
     return reports
-      .filter(r => r.date === today)
+      .filter(r => r.date === today && r.halaqaId === selectedHalaqaId)
       .sort((a, b) => {
         if (a.isAbsent !== b.isAbsent) return a.isAbsent ? 1 : -1;
         const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
         const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
         return valA - valB;
       });
-  }, [reports, today]);
+  }, [reports, today, selectedHalaqaId]);
 
   const stats = useMemo(() => {
-    const total = students.length;
+    const halaqaStudents = students.filter(s => s.halaqaId === selectedHalaqaId);
+    const total = halaqaStudents.length;
     const presentReports = todayReports.filter(r => !r.isAbsent);
     const completed = presentReports.filter(r => r.hasReviewed).length;
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
     const totalPages = presentReports.reduce((sum, r) => sum + r.pagesReviewed, 0);
 
     return { total, completed, percentage, totalPages, presentCount: presentReports.length };
-  }, [students, todayReports]);
+  }, [students, todayReports, selectedHalaqaId]);
 
   const handleStartEdit = (report: Report) => {
     setEditingId(report.id);
@@ -68,10 +88,9 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
 
   const generateWhatsAppText = () => {
     const todayDate = new Date();
-
     const dayName = format(todayDate, 'EEEE', { locale: ar });
+    const currentHalaqa = halaqat.find(h => h.id === selectedHalaqaId);
 
-    // Hijri Date using Intl - Using nu-latn for English numbers
     const hijriFormatter = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
       day: '2-digit',
       month: '2-digit',
@@ -86,7 +105,8 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
     const presentReports = todayReports.filter(r => !r.isAbsent);
     const absentReports = todayReports.filter(r => r.isAbsent);
 
-    let text = `${dayName}\n`;
+    let text = `🖋️ كشف متابعة طالبات ${currentHalaqa?.name || 'الحلقة'}\n`;
+    text += `${dayName}\n`;
     text += `${formattedHijri} هـ\n`;
     text += `${format(todayDate, 'dd/MM/yyyy')} م\n`;
     text += `.....................\n`;
@@ -136,7 +156,7 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
   const handleCopyToClipboard = () => {
     const text = generateWhatsAppText();
     navigator.clipboard.writeText(text).then(() => {
-      alert('تم نسخ التقرير بنجاح! يمكنك الآن لصقه في الواتساب.');
+      alert('تم نسخ التقرير بنجاح!');
     });
   };
 
@@ -144,6 +164,27 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
     <div className="max-w-6xl mx-auto p-4 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
       {/* Sidebar: Stats & Management */}
       <div className="lg:col-span-5 space-y-6">
+        {/* Halaqa Selector */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <label className="text-[10px] uppercase tracking-wider text-slate-500 mb-2 block font-bold">الحلقة الحالية</label>
+          <div className="grid grid-cols-2 gap-2">
+            {halaqat.map(halaqa => (
+              <button
+                key={halaqa.id}
+                onClick={() => setSelectedHalaqaId(halaqa.id)}
+                className={cn(
+                  "px-3 py-2 rounded-xl text-xs font-bold transition-all border",
+                  selectedHalaqaId === halaqa.id
+                    ? "bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-100"
+                    : "bg-slate-50 border-slate-200 text-slate-500 hover:border-emerald-300"
+                )}
+              >
+                {halaqa.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-3 gap-4">
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
             <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-1 font-bold">طالبات الحلقة</div>
@@ -163,12 +204,12 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
           <div className="border-b border-slate-100 pb-4 flex items-center justify-between">
             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
               <Clipboard className="w-5 h-5 text-emerald-600" />
-              إدارة تقارير اليوم
+              إدارة تقارير {halaqat.find(h => h.id === selectedHalaqaId)?.name}
             </h3>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => {
-                  if (confirm('سيتم إعادة ترتيب جميع الطالبات من 1 إلى النهاية لتسهيل التعديل. هل أنتِ متأكدة؟')) onResequenceReports();
+                  if (selectedHalaqaId && confirm('سيتم إعادة ترتيب جميع الطالبات لتسهيل التعديل. هل أنتِ متأكدة؟')) onResequenceReports(selectedHalaqaId);
                 }}
                 className="p-2 text-slate-300 hover:text-emerald-500 transition-all"
                 title="إعادة تسلسل الأرقام"
@@ -177,7 +218,7 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
               </button>
               <button
                 onClick={() => {
-                  if (confirm('هل أنت متأكد من حذف جميع تقارير اليوم؟')) onClearAll();
+                  if (confirm('هل أنت متأكد من حذف جميع تقارير هذه الحلقة اليوم؟')) onClearAll();
                 }}
                 className="p-2 text-slate-300 hover:text-red-500 transition-all"
                 title="حذف الكل"
@@ -279,7 +320,6 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
                     )}
                   </div>
 
-
                   <div className="flex items-center gap-1 transition-all">
                     <button
                       onClick={() => handleStartEdit(report)}
@@ -310,7 +350,7 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
             ))}
             {todayReports.length === 0 && (
               <div className="text-center py-12 text-slate-400 text-sm italic">
-                لم يتم تسجيل أي بطاقات بعد لهذا اليوم
+                {selectedHalaqaId ? "لم يتم تسجيل أي بطاقات لهذه الحلقة اليوم" : "يرجى اختيار حلقة للمشاهدة"}
               </div>
             )}
           </div>
@@ -326,7 +366,7 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
               <Users className="w-6 h-6" />
             </div>
             <div>
-              <div className="font-bold text-sm">جروب حلقة التحفيظ</div>
+              <div className="font-bold text-sm">جروب {halaqat.find(h => h.id === selectedHalaqaId)?.name || 'حلقة التحفيظ'}</div>
               <div className="text-[10px] opacity-80">متصل الآن</div>
             </div>
           </div>
@@ -346,22 +386,9 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
                 <Check className="w-2 h-2" />
               </div>
             </div>
-
-            {todayReports.length > 0 && (
-              <div className="bg-whatsapp-bubble p-3 rounded-lg rounded-tl-none shadow-sm max-w-[85%] mr-auto relative">
-                <div className="text-[12px] text-slate-800">
-                  تم استلام بطاقة جديدة من: <span className="font-bold">{todayReports[todayReports.length - 1].studentName}</span> ✅
-                </div>
-                <div className="text-[9px] text-slate-400 text-left mt-1">
-                  {format(new Date(), 'hh:mm a')}
-                </div>
-              </div>
-            )}
           </div>
-
         </div>
 
-        {/* Large Styled Copy Button Match with StudentForm style */}
         <button
           onClick={handleCopyToClipboard}
           disabled={todayReports.length === 0}

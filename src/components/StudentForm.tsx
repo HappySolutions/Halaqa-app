@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Check, Send, User, Search, ChevronDown, X, AlertCircle, Users } from 'lucide-react';
-import { Student, Report } from '@/types';
+import { Check, Send, User, Search, ChevronDown, X, AlertCircle, Users, LayoutGrid } from 'lucide-react';
+import { Student, Report, Halaqa } from '@/types';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
@@ -8,11 +8,13 @@ import { format } from 'date-fns';
 interface StudentFormProps {
   students: Student[];
   reports: Report[];
+  halaqat: Halaqa[];
   onSubmit: (report: Omit<Report, 'id' | 'timestamp' | 'date' | 'isDeferred'>) => void;
   onUpdate: (id: string, data: any) => void;
 }
 
-export function StudentForm({ students, reports, onSubmit, onUpdate }: StudentFormProps) {
+export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: StudentFormProps) {
+  const [selectedHalaqaId, setSelectedHalaqaId] = useState<string | null>(null);
   const [studentId, setStudentId] = useState('');
   const [editingReportId, setEditingReportId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,12 +39,14 @@ export function StudentForm({ students, reports, onSubmit, onUpdate }: StudentFo
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Filter students based on selected Halaqa and search term
   const filteredStudents = useMemo(() => {
-    if (!searchTerm) return students;
-    return students.filter(s =>
+    const halaqaStudents = students.filter(s => s.halaqaId === selectedHalaqaId);
+    if (!searchTerm) return halaqaStudents;
+    return halaqaStudents.filter(s =>
       s.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [students, searchTerm]);
+  }, [students, selectedHalaqaId, searchTerm]);
 
   const selectedStudent = useMemo(() =>
     students.find(s => s.id === studentId),
@@ -60,12 +64,9 @@ export function StudentForm({ students, reports, onSubmit, onUpdate }: StudentFo
 
   const isTimeRestricted = useMemo(() => {
     try {
-      // Create a date string for KSA timezone and parse it
       const ksaString = new Date().toLocaleString("en-US", { timeZone: "Asia/Riyadh" });
       const ksaDate = new Date(ksaString);
       const ksaHours = ksaDate.getHours();
-
-      // Restriction: 19:00 (7 PM) to 22:00 (10 PM)
       return ksaHours >= 19 && ksaHours < 23;
     } catch (e) {
       const now = new Date();
@@ -76,6 +77,7 @@ export function StudentForm({ students, reports, onSubmit, onUpdate }: StudentFo
   }, []);
 
   const handleStartEdit = (report: Report) => {
+    setSelectedHalaqaId(report.halaqaId);
     setEditingReportId(report.id);
     setStudentId(report.studentId);
     setPages(report.pagesReviewed);
@@ -83,20 +85,19 @@ export function StudentForm({ students, reports, onSubmit, onUpdate }: StudentFo
     setHasReviewed(report.hasReviewed);
     setIsAbsent(report.isAbsent);
     setAbsenceReason(report.absenceReason || '');
-    
-    // Scroll to form
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!studentId || isTimeRestricted) return;
+    if (!studentId || isTimeRestricted || !selectedHalaqaId) return;
     if (isDuplicate && !editingReportId) return;
     if (!isAbsent && !surahs) return;
 
     const reportData = {
       studentId,
       studentName: selectedStudent?.name || '',
+      halaqaId: selectedHalaqaId,
       pagesReviewed: isAbsent ? 0 : pages,
       surahs: isAbsent ? 'غائبة' : surahs,
       hasReviewed: isAbsent ? false : hasReviewed,
@@ -126,7 +127,46 @@ export function StudentForm({ students, reports, onSubmit, onUpdate }: StudentFo
   return (
     <div className="max-w-xl mx-auto p-4 sm:p-6">
       <AnimatePresence mode="wait">
-        {isTimeRestricted ? (
+        {!selectedHalaqaId && !submitted ? (
+          <motion.div
+            key="select-halaqa"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="spiritual-card p-8 sm:p-10 space-y-8"
+          >
+            <div className="text-center">
+              <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <LayoutGrid className="w-8 h-8" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-800">مرحباً بكِ في منصة الحلقات</h2>
+              <p className="text-sm text-slate-500 mt-2">يرجى اختيار الحلقة التي تنتمين إليها للمتابعة</p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              {halaqat.map((halaqa) => (
+                <button
+                  key={halaqa.id}
+                  onClick={() => setSelectedHalaqaId(halaqa.id)}
+                  className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-2xl hover:border-emerald-500 hover:bg-emerald-50 transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-emerald-600 transition-colors">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <span className="font-bold text-slate-700">{halaqa.name}</span>
+                  </div>
+                  <ChevronDown className="w-5 h-5 text-slate-300 -rotate-90" />
+                </button>
+              ))}
+              {halaqat.length === 0 && (
+                <div className="text-center py-8 text-slate-400 text-sm italic">
+                  لا توجد حلقات مضافة حالياً
+                </div>
+              )}
+            </div>
+          </motion.div>
+        ) : isTimeRestricted ? (
           <motion.div
             key="restricted"
             initial={{ opacity: 0, scale: 0.9 }}
@@ -141,9 +181,12 @@ export function StudentForm({ students, reports, onSubmit, onUpdate }: StudentFo
               عذراً، لا يمكن استقبال البطاقات في الوقت الحالي.<br />
               فترة التوقف اليومية: من <span className="font-bold">7:00 مساءً</span> حتى <span className="font-bold">11:00 مساءً</span> بتوقيت مكة المكرمة.
             </p>
-            <div className="mt-8 p-4 bg-white rounded-xl border border-amber-100 text-xs text-amber-700 italic">
-              نسعد باستقبال بطاقاتكنّ خارج هذه الفترة.
-            </div>
+            <button 
+              onClick={() => setSelectedHalaqaId(null)}
+              className="mt-6 text-sm text-amber-700 font-bold hover:underline"
+            >
+              العودة لاختيار الحلقة
+            </button>
           </motion.div>
         ) : submitted ? (
           <motion.div
@@ -169,11 +212,24 @@ export function StudentForm({ students, reports, onSubmit, onUpdate }: StudentFo
             onSubmit={handleSubmit}
             className="spiritual-card p-8 sm:p-10 space-y-6"
           >
-            <div className="border-b border-slate-100 pb-6 text-center">
-              <h2 className="text-xl font-bold text-slate-800">
-                {editingReportId ? 'تعديل البيانات المسجلة' : 'تسجيل الحالة اليومية'}
-              </h2>
-              <p className="text-sm text-slate-500 mt-1">يرجى اختيار الاسم وتحديد حالة الحضور</p>
+            <div className="border-b border-slate-100 pb-6 flex items-center justify-between">
+              <div className="text-right">
+                <h2 className="text-xl font-bold text-slate-800">
+                  {editingReportId ? 'تعديل البيانات' : 'تسجيل الحالة اليومية'}
+                </h2>
+                <p className="text-xs text-emerald-600 font-bold mt-1">
+                  {halaqat.find(h => h.id === selectedHalaqaId)?.name}
+                </p>
+              </div>
+              {!editingReportId && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedHalaqaId(null)}
+                  className="text-xs text-slate-400 hover:text-emerald-600 transition-colors"
+                >
+                  تغيير الحلقة
+                </button>
+              )}
             </div>
 
             {/* Name Selector (Searchable) */}
@@ -216,15 +272,6 @@ export function StudentForm({ students, reports, onSubmit, onUpdate }: StudentFo
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full h-10 pr-9 pl-8 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-emerald-500 transition-all"
                           />
-                          {searchTerm && (
-                            <button
-                              type="button"
-                              onClick={() => setSearchTerm('')}
-                              className="absolute left-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          )}
                         </div>
                       </div>
                       <div className="max-h-60 overflow-y-auto custom-scrollbar">
@@ -248,7 +295,7 @@ export function StudentForm({ students, reports, onSubmit, onUpdate }: StudentFo
                           ))
                         ) : (
                           <div className="px-4 py-8 text-center text-slate-400 text-xs italic">
-                            لم يتم العثور على هذا الاسم
+                            لا يوجد أسماء مسجلة في هذه الحلقة بعد
                           </div>
                         )}
                       </div>
@@ -286,7 +333,6 @@ export function StudentForm({ students, reports, onSubmit, onUpdate }: StudentFo
 
             {(!isDuplicate || editingReportId) && (
               <>
-                {/* Absence Toggle */}
                 <div
                   onClick={() => setIsAbsent(!isAbsent)}
                   className={cn(
@@ -332,7 +378,6 @@ export function StudentForm({ students, reports, onSubmit, onUpdate }: StudentFo
                       exit={{ opacity: 0, height: 0 }}
                       className="space-y-6 overflow-hidden"
                     >
-                      {/* Surahs Input */}
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-slate-700">السورة / السور التي تمت مراجعتها</label>
                         <input
@@ -345,7 +390,6 @@ export function StudentForm({ students, reports, onSubmit, onUpdate }: StudentFo
                         />
                       </div>
 
-                      {/* Pages & Status */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <label className="text-sm font-semibold text-slate-700">عدد أوجه المراجعة</label>
@@ -414,87 +458,85 @@ export function StudentForm({ students, reports, onSubmit, onUpdate }: StudentFo
                   إلغاء التعديل
                 </button>
               )}
-              
-              <p className="text-[10px] text-center text-slate-400 mt-2 leading-relaxed">
-                سيتم إرسال نسخة تلقائية إلى جروب الواتساب الخاص بالمعلمة
-              </p>
             </div>
           </motion.form>
         )}
       </AnimatePresence>
 
-      {/* Today's Registration List (Visible to Students) */}
-      <div className="mt-12 space-y-4">
-        <div className="flex items-center justify-between px-2">
-          <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-            <Users className="w-5 h-5 text-emerald-600" />
-            قائمة المسجلات اليوم
-          </h3>
-          <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full">
-            {reports.filter(r => r.date === format(new Date(), 'yyyy-MM-dd')).length} طالبة
-          </span>
-        </div>
+      {/* Today's Registration List (Filtered by selected Halaqa) */}
+      {selectedHalaqaId && (
+        <div className="mt-12 space-y-4">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <Users className="w-5 h-5 text-emerald-600" />
+              قائمة مسجلات {halaqat.find(h => h.id === selectedHalaqaId)?.name}
+            </h3>
+            <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full">
+              {reports.filter(r => r.date === format(new Date(), 'yyyy-MM-dd') && r.halaqaId === selectedHalaqaId).length} طالبة
+            </span>
+          </div>
 
-        <div className="space-y-3">
-          {reports
-            .filter(r => r.date === format(new Date(), 'yyyy-MM-dd'))
-            .sort((a, b) => {
-              if (a.isAbsent !== b.isAbsent) return a.isAbsent ? 1 : -1;
-              const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
-              const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
-              return valA - valB;
-            })
-            .map((r, index) => (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                key={r.id}
-                className={cn(
-                  "spiritual-card p-4 flex items-center justify-between border-slate-100",
-                  r.studentId === studentId ? "ring-2 ring-emerald-500/20 bg-emerald-50/30" : ""
-                )}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-sm">
-                    {index + 1}
-                  </div>
-                  <div>
-                    <div className="font-bold text-slate-800 text-sm">{r.studentName}</div>
-                    <div className="text-[10px] text-slate-500">
-                      {r.isAbsent ? (
-                        <span className="text-red-500 font-bold">غائبة: {r.absenceReason}</span>
-                      ) : (
-                        <span>{r.pagesReviewed} وجه - {r.surahs}</span>
-                      )}
+          <div className="space-y-3">
+            {reports
+              .filter(r => r.date === format(new Date(), 'yyyy-MM-dd') && r.halaqaId === selectedHalaqaId)
+              .sort((a, b) => {
+                if (a.isAbsent !== b.isAbsent) return a.isAbsent ? 1 : -1;
+                const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
+                const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
+                return valA - valB;
+              })
+              .map((r, index) => (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  key={r.id}
+                  className={cn(
+                    "spiritual-card p-4 flex items-center justify-between border-slate-100",
+                    r.studentId === studentId ? "ring-2 ring-emerald-500/20 bg-emerald-50/30" : ""
+                  )}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-sm">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-800 text-sm">{r.studentName}</div>
+                      <div className="text-[10px] text-slate-500">
+                        {r.isAbsent ? (
+                          <span className="text-red-500 font-bold">غائبة: {r.absenceReason}</span>
+                        ) : (
+                          <span>{r.pagesReviewed} وجه - {r.surahs}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {r.studentId === studentId && !editingReportId && (
-                    <button
-                      onClick={() => handleStartEdit(r)}
-                      className="p-2 text-emerald-600 hover:bg-emerald-100 rounded-full transition-all"
-                      title="تعديل بياناتي"
-                    >
-                      <span className="text-xs font-bold">تعديل ✏️</span>
-                    </button>
-                  )}
-                  {r.hasReviewed && !r.isAbsent && (
-                    <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                      <Check className="w-3 h-3" />
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          
-          {reports.filter(r => r.date === format(new Date(), 'yyyy-MM-dd')).length === 0 && (
-            <div className="text-center py-10 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-              <p className="text-sm text-slate-400 italic">لم يتم تسجيل أي طالبة بعد لهذا اليوم</p>
-            </div>
-          )}
+                  <div className="flex items-center gap-2">
+                    {r.studentId === studentId && !editingReportId && (
+                      <button
+                        onClick={() => handleStartEdit(r)}
+                        className="p-2 text-emerald-600 hover:bg-emerald-100 rounded-full transition-all"
+                        title="تعديل بياناتي"
+                      >
+                        <span className="text-xs font-bold">تعديل ✏️</span>
+                      </button>
+                    )}
+                    {r.hasReviewed && !r.isAbsent && (
+                      <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <Check className="w-3 h-3" />
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            
+            {reports.filter(r => r.date === format(new Date(), 'yyyy-MM-dd') && r.halaqaId === selectedHalaqaId).length === 0 && (
+              <div className="text-center py-10 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                <p className="text-sm text-slate-400 italic">لم يتم تسجيل أي طالبة في هذه الحلقة بعد</p>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

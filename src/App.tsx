@@ -8,7 +8,7 @@ import { Header } from './components/Header';
 import { StudentForm } from './components/StudentForm';
 import { AdminPanel } from './components/AdminPanel';
 import { StudentManager } from './components/StudentManager';
-import { Report, Student, INITIAL_STUDENTS, UpdateReportData } from './types';
+import { Report, Student, Halaqa, UpdateReportData } from './types';
 import { format, addDays, getDay, parseISO } from 'date-fns';
 import { Settings, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -36,6 +36,7 @@ export default function App() {
   const [passwordError, setPasswordError] = useState(false);
   
   // Data State
+  const [halaqat, setHalaqat] = useState<Halaqa[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,25 +64,21 @@ export default function App() {
   useEffect(() => {
     // Check if Firebase is configured
     if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) {
-      console.warn('Firebase is not configured. Falling back to local state (read-only for demo).');
-      setStudents(INITIAL_STUDENTS);
       setLoading(false);
       return;
     }
 
+    const halaqatQuery = query(collection(db, 'halaqat'));
+    const unsubscribeHalaqat = onSnapshot(halaqatQuery, (snapshot) => {
+      const halaqatData: Halaqa[] = [];
+      snapshot.forEach((doc) => {
+        halaqatData.push({ id: doc.id, ...doc.data() } as Halaqa);
+      });
+      setHalaqat(halaqatData);
+    });
+
     const studentsQuery = query(collection(db, 'students'));
-    const unsubscribeStudents = onSnapshot(studentsQuery, async (snapshot) => {
-      // If students collection is empty, seed it with the initial students list
-      if (snapshot.empty) {
-        console.log('No students found, seeding Firestore with initial students...');
-        for (let i = 0; i < INITIAL_STUDENTS.length; i++) {
-          await addDoc(collection(db, 'students'), { 
-            name: INITIAL_STUDENTS[i].name, 
-            order: i 
-          });
-        }
-        return; // The onSnapshot will fire again after seeding
-      }
+    const unsubscribeStudents = onSnapshot(studentsQuery, (snapshot) => {
       const studentsData: Student[] = [];
       snapshot.forEach((doc) => {
         studentsData.push({ id: doc.id, ...doc.data() } as Student);
@@ -144,6 +141,7 @@ export default function App() {
     });
 
     return () => {
+      unsubscribeHalaqat();
       unsubscribeStudents();
       unsubscribeReports();
     };
@@ -154,7 +152,7 @@ export default function App() {
 
     try {
       const today = format(new Date(), 'yyyy-MM-dd');
-      const todayReports = reports.filter(r => r.date === today);
+      const todayReports = reports.filter(r => r.date === today && r.halaqaId === reportData.halaqaId);
       // Find the next logical turn order
       const maxTurn = todayReports.length > 0 ? Math.max(...todayReports.map(r => r.turnOrder ?? 0)) : 0;
       
@@ -240,48 +238,25 @@ export default function App() {
     }
   };
 
-  const handleAddStudent = async (name: string) => {
-    if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
-    try {
-      // Get the highest order to put the new student at the end
-      const maxOrder = students.length > 0 ? Math.max(...students.map(s => s.order || 0)) : -1;
-      await addDoc(collection(db, 'students'), { 
-        name,
-        order: maxOrder + 1
-      });
-    } catch (error) {
-      console.error("Error adding student: ", error);
-    }
-  };
-
-  const handleResequenceReports = async () => {
+  const handleResequenceReports = async (halaqaId: string) => {
     if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
     
     const today = format(new Date(), 'yyyy-MM-dd');
-    const todayReports = reports
-      .filter(r => r.date === today)
-      .sort((a, b) => {
-        const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
-        const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
-        return valA - valB;
-      });
-      
-    try {
-      const today = format(new Date(), 'yyyy-MM-dd');
-      const todayReports = reports.filter(r => r.date === today);
-      
-      const present = todayReports.filter(r => !r.isAbsent).sort((a, b) => {
-        const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
-        const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
-        return valA - valB;
-      });
-      
-      const absent = todayReports.filter(r => r.isAbsent).sort((a, b) => {
-        const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
-        const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
-        return valA - valB;
-      });
+    const todayReports = reports.filter(r => r.date === today && r.halaqaId === halaqaId);
+    
+    const present = todayReports.filter(r => !r.isAbsent).sort((a, b) => {
+      const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
+      const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
+      return valA - valB;
+    });
+    
+    const absent = todayReports.filter(r => r.isAbsent).sort((a, b) => {
+      const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
+      const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
+      return valA - valB;
+    });
 
+    try {
       // Update present sequence
       for (let i = 0; i < present.length; i++) {
         if (present[i].turnOrder !== i + 1) {
@@ -297,6 +272,43 @@ export default function App() {
       }
     } catch (error) {
       console.error("Error resequencing reports: ", error);
+    }
+  };
+
+  const handleAddHalaqa = async (name: string) => {
+    if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
+    try {
+      await addDoc(collection(db, 'halaqat'), { 
+        name,
+        timestamp: serverTimestamp()
+      });
+    } catch (error) {
+      console.error("Error adding halaqa: ", error);
+    }
+  };
+
+  const handleDeleteHalaqa = async (id: string) => {
+    if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
+    try {
+      await deleteDoc(doc(db, 'halaqat', id));
+    } catch (error) {
+      console.error("Error deleting halaqa: ", error);
+    }
+  };
+
+  const handleAddStudent = async (name: string, halaqaId: string) => {
+    if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
+    try {
+      // Get the highest order for this specific halaqa
+      const halaqaStudents = students.filter(s => s.halaqaId === halaqaId);
+      const maxOrder = halaqaStudents.length > 0 ? Math.max(...halaqaStudents.map(s => s.order || 0)) : -1;
+      await addDoc(collection(db, 'students'), { 
+        name,
+        halaqaId,
+        order: maxOrder + 1
+      });
+    } catch (error) {
+      console.error("Error adding student: ", error);
     }
   };
 
@@ -333,6 +345,7 @@ export default function App() {
               <StudentForm 
                 students={students} 
                 reports={reports} 
+                halaqat={halaqat}
                 onSubmit={handleAddReport} 
                 onUpdate={handleUpdateReport}
               />
@@ -397,6 +410,7 @@ export default function App() {
                   <AdminPanel 
                     reports={reports} 
                     students={students} 
+                    halaqat={halaqat}
                     onDeleteReport={handleDeleteReport}
                     onToggleDeferred={handleToggleDeferred}
                     onUpdateReport={handleUpdateReport}
@@ -410,20 +424,23 @@ export default function App() {
                       className="flex items-center gap-2 text-slate-500 hover:text-emerald-600 font-bold transition-all text-sm"
                     >
                       <Settings className={cn("w-4 h-4", showSettings ? "rotate-90 transition-transform" : "")} />
-                      <span>{showSettings ? 'إخفاء إدارة الأسماء' : 'إدارة قائمة الأسماء'}</span>
+                      <span>{showSettings ? 'إخفاء إدارة الحلقات والأسماء' : 'إدارة الحلقات والأسماء'}</span>
                     </button>
                     
                     {showSettings && (
                       <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        className="overflow-hidden mt-4"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="mt-6 overflow-hidden"
                       >
                          <StudentManager 
-                          students={students} 
-                          onAdd={handleAddStudent} 
-                          onRemove={handleRemoveStudent} 
-                        />
+                           students={students} 
+                           halaqat={halaqat}
+                           onAddHalaqa={handleAddHalaqa}
+                           onDeleteHalaqa={handleDeleteHalaqa}
+                           onAdd={handleAddStudent} 
+                           onRemove={handleRemoveStudent} 
+                         />
                       </motion.div>
                     )}
                   </div>
