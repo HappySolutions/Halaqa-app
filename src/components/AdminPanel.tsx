@@ -32,6 +32,7 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
     return reports
       .filter(r => r.date === today)
       .sort((a, b) => {
+        if (a.isAbsent !== b.isAbsent) return a.isAbsent ? 1 : -1;
         const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
         const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
         return valA - valB;

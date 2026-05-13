@@ -124,9 +124,12 @@ export default function App() {
           timestamp: data.timestamp?.toMillis ? data.timestamp.toMillis() : (data.timestamp ?? 0)
         } as Report);
       });
-      // Sort: Today's reports by turnOrder (manual) then timestamp (auto).
+      // Sort: Date, then Category (Present first), then turnOrder/timestamp
       reportsData.sort((a, b) => {
         if (a.date === b.date) {
+          // Present (isAbsent=false) should come before Absent (isAbsent=true)
+          if (a.isAbsent !== b.isAbsent) return a.isAbsent ? 1 : -1;
+          
           const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
           const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
           return valA - valB;
@@ -264,10 +267,32 @@ export default function App() {
       });
       
     try {
-      for (let i = 0; i < todayReports.length; i++) {
-        const report = todayReports[i];
-        if (report.turnOrder !== i + 1) {
-          await updateDoc(doc(db, 'reports', report.id), { turnOrder: i + 1 });
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const todayReports = reports.filter(r => r.date === today);
+      
+      const present = todayReports.filter(r => !r.isAbsent).sort((a, b) => {
+        const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
+        const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
+        return valA - valB;
+      });
+      
+      const absent = todayReports.filter(r => r.isAbsent).sort((a, b) => {
+        const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
+        const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
+        return valA - valB;
+      });
+
+      // Update present sequence
+      for (let i = 0; i < present.length; i++) {
+        if (present[i].turnOrder !== i + 1) {
+          await updateDoc(doc(db, 'reports', present[i].id), { turnOrder: i + 1 });
+        }
+      }
+      
+      // Update absent sequence
+      for (let i = 0; i < absent.length; i++) {
+        if (absent[i].turnOrder !== i + 1) {
+          await updateDoc(doc(db, 'reports', absent[i].id), { turnOrder: i + 1 });
         }
       }
     } catch (error) {
