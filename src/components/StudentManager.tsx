@@ -11,14 +11,16 @@ interface StudentManagerProps {
   onDeleteHalaqa: (id: string) => void;
   onAdd: (name: string, halaqaId: string) => void;
   onRemove: (id: string) => void;
-  onImport: (halaqaId: string) => void;
+  onBulkAdd: (halaqaId: string, names: string[]) => void;
 }
 
-export function StudentManager({ students, halaqat, onAddHalaqa, onDeleteHalaqa, onAdd, onRemove, onImport }: StudentManagerProps) {
+export function StudentManager({ students, halaqat, onAddHalaqa, onDeleteHalaqa, onAdd, onRemove, onBulkAdd }: StudentManagerProps) {
   const [newHalaqaName, setNewHalaqaName] = useState('');
   const [newStudentName, setNewStudentName] = useState('');
+  const [bulkText, setBulkText] = useState('');
   const [selectedHalaqaId, setSelectedHalaqaId] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [showBulkAdd, setShowBulkAdd] = useState(false);
 
   const handleAddHalaqa = (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,21 +134,44 @@ export function StudentManager({ students, halaqat, onAddHalaqa, onDeleteHalaqa,
               </button>
             </form>
 
-            {filteredStudents.length === 0 && (
-              <div className="mb-8 p-6 border-2 border-dashed border-emerald-100 rounded-2xl bg-emerald-50/30 text-center">
-                <p className="text-sm text-slate-600 mb-4 font-medium">هذه الحلقة لا تحتوي على طالبات حالياً. هل ترغبين في استيراد القائمة السابقة؟</p>
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={() => setShowBulkAdd(!showBulkAdd)}
+                className="text-xs text-emerald-600 font-bold hover:underline"
+              >
+                {showBulkAdd ? 'إغلاق الإضافة الجماعية' : 'إضافة قائمة أسماء جماعية؟'}
+              </button>
+            </div>
+
+            {showBulkAdd && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="mb-8 p-6 border-2 border-dashed border-emerald-100 rounded-2xl bg-emerald-50/30"
+              >
+                <label className="block text-sm font-bold text-slate-700 mb-2">انسخي قائمة الأسماء هنا (اسم في كل سطر)</label>
+                <textarea
+                  value={bulkText}
+                  onChange={(e) => setBulkText(e.target.value)}
+                  placeholder="مثال:&#10;خديجة محمد&#10;فاطمة أحمد&#10;عائشة علي"
+                  className="w-full h-32 bg-white border border-slate-200 rounded-xl p-4 text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-all mb-4"
+                />
                 <button
                   onClick={async () => {
+                    const names = bulkText.split('\n').filter(name => name.trim() !== '');
+                    if (names.length === 0) return;
                     setIsImporting(true);
-                    await onImport(selectedHalaqaId);
+                    await onBulkAdd(selectedHalaqaId, names);
                     setIsImporting(false);
+                    setBulkText('');
+                    setShowBulkAdd(false);
                   }}
-                  disabled={isImporting}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-2 mx-auto disabled:opacity-50"
+                  disabled={isImporting || !bulkText.trim()}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
                 >
-                  {isImporting ? 'جاري الاستيراد...' : 'استيراد القائمة السابقة (52 اسم)'}
+                  {isImporting ? 'جاري الإضافة...' : `إضافة ${bulkText.split('\n').filter(n => n.trim()).length} اسم إلى القائمة`}
                 </button>
-              </div>
+              </motion.div>
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
