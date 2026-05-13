@@ -75,6 +75,8 @@ export default function App() {
         halaqatData.push({ id: doc.id, ...doc.data() } as Halaqa);
       });
       setHalaqat(halaqatData);
+    }, (error) => {
+      console.error("Error fetching halaqat:", error);
     });
 
     const studentsQuery = query(collection(db, 'students'));
@@ -284,6 +286,7 @@ export default function App() {
       });
     } catch (error) {
       console.error("Error adding halaqa: ", error);
+      alert("عذراً، فشل إضافة الحلقة. قد يكون ذلك بسبب قيود في قاعدة البيانات.");
     }
   };
 
@@ -293,6 +296,7 @@ export default function App() {
       await deleteDoc(doc(db, 'halaqat', id));
     } catch (error) {
       console.error("Error deleting halaqa: ", error);
+      alert("فشل حذف الحلقة.");
     }
   };
 
@@ -336,6 +340,7 @@ export default function App() {
       }
     } catch (error) {
       console.error("Error importing students: ", error);
+      alert("فشل استيراد الأسماء. يرجى التأكد من اتصال الإنترنت.");
     }
   };
 
