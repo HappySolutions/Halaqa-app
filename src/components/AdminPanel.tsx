@@ -18,7 +18,13 @@ interface AdminPanelProps {
 
 export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred, onUpdateReport, onReorderReports, onClearAll }: AdminPanelProps) {
   const [editingId, setEditingId] = React.useState<string | null>(null);
-  const [editForm, setEditForm] = React.useState({ surahs: '', pagesReviewed: 0, hasReviewed: false });
+  const [editForm, setEditForm] = React.useState({ 
+    surahs: '', 
+    pagesReviewed: 0, 
+    hasReviewed: false,
+    isAbsent: false,
+    absenceReason: ''
+  });
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const todayReports = useMemo(() => {
@@ -42,7 +48,9 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
     setEditForm({ 
       surahs: report.surahs, 
       pagesReviewed: report.pagesReviewed,
-      hasReviewed: report.hasReviewed 
+      hasReviewed: report.hasReviewed,
+      isAbsent: report.isAbsent,
+      absenceReason: report.absenceReason || ''
     });
   };
 
@@ -179,35 +187,59 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
                     </div>
                     {editingId === report.id ? (
                       <div className="mt-2 space-y-2">
-                        <input
-                          type="text"
-                          value={editForm.surahs}
-                          onChange={(e) => setEditForm({ ...editForm, surahs: e.target.value })}
-                          className="w-full text-xs p-1 border rounded"
-                          placeholder="السور"
-                        />
-                        <div className="flex gap-2">
-                          <input
-                            type="number"
-                            step="0.5"
-                            value={editForm.pagesReviewed}
-                            onChange={(e) => setEditForm({ ...editForm, pagesReviewed: parseFloat(e.target.value) })}
-                            className="flex-1 text-xs p-1 border rounded"
-                            placeholder="الأوجه"
-                          />
-                          <label className="flex items-center gap-1 text-[10px] cursor-pointer bg-white px-2 border rounded">
+                        <div className="flex items-center gap-2 mb-2">
+                          <label className="flex items-center gap-1 text-[10px] cursor-pointer bg-red-50 px-2 py-1 border border-red-100 rounded text-red-700 font-bold">
                             <input
                               type="checkbox"
-                              checked={editForm.hasReviewed}
-                              onChange={(e) => setEditForm({ ...editForm, hasReviewed: e.target.checked })}
+                              checked={editForm.isAbsent}
+                              onChange={(e) => setEditForm({ ...editForm, isAbsent: e.target.checked })}
                               className="w-3 h-3"
                             />
-                            تمت المراجعة
+                            طالبة غائبة
                           </label>
                         </div>
-                        <div className="flex gap-2">
-                          <button onClick={() => handleSaveEdit(report.id)} className="text-[10px] bg-emerald-500 text-white px-2 py-1 rounded">حفظ</button>
-                          <button onClick={() => setEditingId(null)} className="text-[10px] bg-slate-300 text-slate-700 px-2 py-1 rounded">إلغاء</button>
+
+                        {editForm.isAbsent ? (
+                          <input
+                            type="text"
+                            value={editForm.absenceReason}
+                            onChange={(e) => setEditForm({ ...editForm, absenceReason: e.target.value })}
+                            className="w-full text-xs p-1 border rounded bg-white"
+                            placeholder="سبب الغياب..."
+                          />
+                        ) : (
+                          <>
+                            <input
+                              type="text"
+                              value={editForm.surahs}
+                              onChange={(e) => setEditForm({ ...editForm, surahs: e.target.value })}
+                              className="w-full text-xs p-1 border rounded bg-white"
+                              placeholder="السور المراجعة"
+                            />
+                            <div className="flex gap-2">
+                              <input
+                                type="number"
+                                step="0.5"
+                                value={editForm.pagesReviewed}
+                                onChange={(e) => setEditForm({ ...editForm, pagesReviewed: parseFloat(e.target.value) })}
+                                className="flex-1 text-xs p-1 border rounded bg-white"
+                                placeholder="الأوجه"
+                              />
+                              <label className="flex items-center gap-1 text-[10px] cursor-pointer bg-white px-2 border rounded">
+                                <input
+                                  type="checkbox"
+                                  checked={editForm.hasReviewed}
+                                  onChange={(e) => setEditForm({ ...editForm, hasReviewed: e.target.checked })}
+                                  className="w-3 h-3"
+                                />
+                                تمت المراجعة
+                              </label>
+                            </div>
+                          </>
+                        )}
+                        <div className="flex gap-2 pt-1 border-t border-slate-100 mt-2">
+                          <button onClick={() => handleSaveEdit(report.id)} className="text-[10px] font-bold bg-emerald-600 text-white px-3 py-1 rounded-lg shadow-sm">حفظ</button>
+                          <button onClick={() => setEditingId(null)} className="text-[10px] font-bold bg-slate-200 text-slate-600 px-3 py-1 rounded-lg">إلغاء</button>
                         </div>
                       </div>
                     ) : (
@@ -235,15 +267,13 @@ export function AdminPanel({ reports, students, onDeleteReport, onToggleDeferred
                   </div>
 
                   <div className="flex items-center gap-1 transition-all">
-                    {!report.isAbsent && (
-                      <button
-                        onClick={() => handleStartEdit(report)}
-                        className="p-1.5 text-slate-400 hover:text-emerald-500 transition-all"
-                        title="تعديل"
-                      >
-                        <span className="text-sm">✏️</span>
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleStartEdit(report)}
+                      className="p-1.5 text-slate-400 hover:text-emerald-500 transition-all"
+                      title="تعديل"
+                    >
+                      <span className="text-sm">✏️</span>
+                    </button>
                     <button
                       onClick={() => onToggleDeferred(report.id)}
                       title={report.isDeferred ? "إلغاء الترحيل" : "ترحيل للغد"}
