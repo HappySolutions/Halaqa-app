@@ -25,7 +25,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
   const [hasReviewed, setHasReviewed] = useState(true);
   const [isAbsent, setIsAbsent] = useState(false);
   const [absenceReason, setAbsenceReason] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+  const [submitType, setSubmitType] = useState<'create' | 'update' | 'delete' | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -139,13 +139,14 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
 
     if (editingReportId) {
       onUpdate(editingReportId, reportData);
+      setSubmitType('update');
     } else {
       onSubmit(reportData);
+      setSubmitType('create');
     }
 
-    setSubmitted(true);
     setTimeout(() => {
-      setSubmitted(false);
+      setSubmitType(null);
       setStudentId('');
       setEditingReportId(null);
       setSearchTerm('');
@@ -159,7 +160,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
   return (
     <div className="max-w-xl mx-auto p-4 sm:p-6">
       <AnimatePresence mode="wait">
-        {!selectedHalaqaId && !submitted ? (
+        {!selectedHalaqaId && !submitType ? (
           <motion.div
             key="select-halaqa"
             initial={{ opacity: 0, y: 20 }}
@@ -220,7 +221,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
               العودة لاختيار الحلقة
             </button>
           </motion.div>
-        ) : submitted ? (
+        ) : submitType ? (
           <motion.div
             key="success"
             initial={{ opacity: 0, scale: 0.9 }}
@@ -232,9 +233,11 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
               <Check className="w-10 h-10" />
             </div>
             <h2 className="text-2xl font-bold text-slate-800 mb-2">
-              {editingReportId ? 'تم تحديث البيانات بنجاح!' : 'تم التسجيل بنجاح!'}
+              {submitType === 'delete' ? 'تم حذف التسجيل بنجاح!' : submitType === 'update' ? 'تم تحديث البيانات بنجاح!' : 'تم التسجيل بنجاح!'}
             </h2>
-            <p className="text-slate-500">بارك الله في جهودكِ.</p>
+            <p className="text-slate-500">
+              {submitType === 'delete' ? 'تمت إزالة بياناتك لهذا اليوم.' : 'بارك الله في جهودكِ.'}
+            </p>
           </motion.div>
         ) : (
           <motion.form
@@ -483,8 +486,8 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
                       if (confirm('هل أنت متأكدة من حذف هذا التسجيل؟')) {
                         onDelete(editingReportId);
                         handleChangeHalaqa(); // reset form
-                        setSubmitted(true);
-                        setTimeout(() => setSubmitted(false), 3000);
+                        setSubmitType('delete');
+                        setTimeout(() => setSubmitType(null), 3000);
                       }
                     }}
                     className="w-full bg-red-50 border border-red-200 hover:bg-red-100 text-red-600 font-bold py-2 rounded-xl transition-all text-sm flex items-center justify-center gap-2"
