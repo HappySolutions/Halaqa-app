@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Check, Send, User, Search, ChevronDown, X, AlertCircle, Users, LayoutGrid } from 'lucide-react';
+import { Check, Send, User, Search, ChevronDown, X, AlertCircle, Users, LayoutGrid, Trash2 } from 'lucide-react';
 import { Student, Report, Halaqa } from '@/types';
 import { cn, getEffectiveDateForHalaqa } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -11,9 +11,10 @@ interface StudentFormProps {
   halaqat: Halaqa[];
   onSubmit: (report: Omit<Report, 'id' | 'timestamp' | 'date' | 'isDeferred'>) => void;
   onUpdate: (id: string, data: any) => void;
+  onDelete: (id: string) => void;
 }
 
-export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: StudentFormProps) {
+export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, onDelete }: StudentFormProps) {
   const [selectedHalaqaId, setSelectedHalaqaId] = useState<string | null>(null);
   const [studentId, setStudentId] = useState('');
   const [editingReportId, setEditingReportId] = useState<string | null>(null);
@@ -71,7 +72,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
     try {
       if (!selectedHalaqaId) return false;
       const currentHalaqa = halaqat.find(h => h.id === selectedHalaqaId);
-      
+
       const ksaString = new Date().toLocaleString("en-US", { timeZone: "Asia/Riyadh" });
       const ksaDate = new Date(ksaString);
       const ksaHours = ksaDate.getHours();
@@ -80,7 +81,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
       // Get times from halaqa or defaults
       const lockTime = currentHalaqa?.registrationLockTime || "19:00";
       const nextDayTime = currentHalaqa?.nextDayRegStartTime || "22:30";
-      
+
       const [lockH, lockM] = lockTime.split(':').map(Number);
       const [nextH, nextM] = nextDayTime.split(':').map(Number);
 
@@ -212,7 +213,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
               عذراً، لا يمكن استقبال البطاقات في الوقت الحالي.<br />
               فترة التوقف لهذه الحلقة: من <span className="font-bold">{halaqat.find(h => h.id === selectedHalaqaId)?.registrationLockTime || '7:00 مساءً'}</span> حتى <span className="font-bold">{halaqat.find(h => h.id === selectedHalaqaId)?.nextDayRegStartTime || '10:30 مساءً'}</span> بتوقيت مكة المكرمة.
             </p>
-            <button 
+            <button
               onClick={handleChangeHalaqa}
               className="mt-6 text-sm text-amber-700 font-bold hover:underline"
             >
@@ -414,7 +415,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
                         <input
                           type="text"
                           required={!isAbsent}
-                          placeholder="مثال: البقرة (١-٥٠)"
+                          placeholder="مثال:د. نوح م.الجن الى الناس"
                           value={surahs}
                           onChange={(e) => setSurahs(e.target.value)}
                           className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
@@ -473,21 +474,38 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
                 </span>
                 {!isDuplicate && !isTimeRestricted && <Send className="w-4 h-4 group-hover:translate-x-[-4px] transition-transform" />}
               </button>
-              
+
               {editingReportId && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingReportId(null);
-                    setStudentId('');
-                    setPages(1);
-                    setSurahs('');
-                    setIsAbsent(false);
-                  }}
-                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded-xl transition-all text-sm"
-                >
-                  إلغاء التعديل
-                </button>
+                <div className="grid grid-cols-2 gap-3 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm('هل أنت متأكدة من حذف هذا التسجيل؟')) {
+                        onDelete(editingReportId);
+                        handleChangeHalaqa(); // reset form
+                        setSubmitted(true);
+                        setTimeout(() => setSubmitted(false), 3000);
+                      }
+                    }}
+                    className="w-full bg-red-50 border border-red-200 hover:bg-red-100 text-red-600 font-bold py-2 rounded-xl transition-all text-sm flex items-center justify-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    حذف التسجيل
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingReportId(null);
+                      setStudentId('');
+                      setPages(0);
+                      setSurahs('');
+                      setIsAbsent(false);
+                    }}
+                    className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded-xl transition-all text-sm"
+                  >
+                    إلغاء التعديل
+                  </button>
+                </div>
               )}
             </div>
           </motion.form>
@@ -559,7 +577,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
                   </div>
                 </motion.div>
               ))}
-            
+
             {reports.filter(r => r.date === currentEffectiveDate && r.halaqaId === selectedHalaqaId).length === 0 && (
               <div className="text-center py-10 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
                 <p className="text-sm text-slate-400 italic">لم يتم تسجيل أي طالبة في هذه الحلقة بعد</p>
