@@ -14,6 +14,7 @@ interface StudentManagerProps {
   onRemove: (id: string) => void;
   onUpdateStudent: (id: string, name: string) => void;
   onBulkAdd: (halaqaId: string, names: string[]) => void;
+  adminRole: 'master' | 'teacher' | null;
 }
 
 export function StudentManager({ 
@@ -25,7 +26,8 @@ export function StudentManager({
   onAdd, 
   onRemove,
   onUpdateStudent,
-  onBulkAdd 
+  onBulkAdd,
+  adminRole
 }: StudentManagerProps) {
   const [newHalaqaName, setNewHalaqaName] = useState('');
   const [newStudentName, setNewStudentName] = useState('');
@@ -37,7 +39,8 @@ export function StudentManager({
   const [editForm, setEditForm] = useState({
     name: '',
     registrationLockTime: '19:00',
-    nextDayRegStartTime: '22:30'
+    nextDayRegStartTime: '22:30',
+    password: ''
   });
 
   // Student Editing State
@@ -59,7 +62,8 @@ export function StudentManager({
     setEditForm({
       name: halaqa.name,
       registrationLockTime: halaqa.registrationLockTime || '19:00',
-      nextDayRegStartTime: halaqa.nextDayRegStartTime || '22:30'
+      nextDayRegStartTime: halaqa.nextDayRegStartTime || '22:30',
+      password: halaqa.password || ''
     });
   };
 
@@ -100,22 +104,24 @@ export function StudentManager({
           إدارة الحلقات
         </h2>
 
-        <form onSubmit={handleAddHalaqa} className="flex gap-2 mb-8">
-          <input
-            type="text"
-            required
-            placeholder="اسم الحلقة الجديدة (مثلاً: حلقة المغرب)..."
-            value={newHalaqaName}
-            onChange={(e) => setNewHalaqaName(e.target.value)}
-            className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-          />
-          <button
-            type="submit"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 rounded-xl shadow-md transition-all font-bold text-sm"
-          >
-            إضافة حلقة
-          </button>
-        </form>
+        {adminRole === 'master' && (
+          <form onSubmit={handleAddHalaqa} className="flex gap-2 mb-8">
+            <input
+              type="text"
+              required
+              placeholder="اسم الحلقة الجديدة (مثلاً: حلقة المغرب)..."
+              value={newHalaqaName}
+              onChange={(e) => setNewHalaqaName(e.target.value)}
+              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+            />
+            <button
+              type="submit"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 rounded-xl shadow-md transition-all font-bold text-sm"
+            >
+              إضافة حلقة
+            </button>
+          </form>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {halaqat.map((halaqa) => (
@@ -156,6 +162,16 @@ export function StudentManager({
                       />
                     </div>
                   </div>
+                  <div>
+                    <label className="text-[8px] text-slate-400 block mb-0.5">كلمة مرور المشرفة</label>
+                    <input
+                      type="text"
+                      placeholder="اتركيه فارغاً لعدم وضع كلمة مرور"
+                      value={editForm.password}
+                      onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                      className="w-full text-xs font-mono p-1 border rounded bg-white"
+                    />
+                  </div>
                   <div className="flex gap-2 pt-1">
                     <button onClick={handleSaveEditHalaqa} className="bg-emerald-600 text-white p-1 rounded-md shadow-sm">
                       <Check className="w-3 h-3" />
@@ -176,15 +192,17 @@ export function StudentManager({
                       >
                         <Settings2 className="w-3.5 h-3.5" />
                       </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm('هل أنت متأكد من حذف هذه الحلقة؟')) onDeleteHalaqa(halaqa.id);
-                        }}
-                        className="p-1 text-slate-300 hover:text-red-500"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {adminRole === 'master' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm('هل أنت متأكد من حذف هذه الحلقة؟')) onDeleteHalaqa(halaqa.id);
+                          }}
+                          className="p-1 text-slate-300 hover:text-red-500"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                   <button 

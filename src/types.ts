@@ -3,8 +3,9 @@ export interface Halaqa {
   name: string;
   teacherName?: string;
   timestamp?: number;
-  registrationLockTime?: string; // e.g. "19:00"
-  nextDayRegStartTime?: string; // e.g. "22:30"
+  registrationLockTime?: string; // Time to stop registration (HH:MM)
+  nextDayRegStartTime?: string; // Time to start next day's registration (HH:MM)
+  password?: string; // Optional password for the halaqa's teacher
 }
 
 export interface Student {

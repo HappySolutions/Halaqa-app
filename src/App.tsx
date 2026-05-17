@@ -31,8 +31,11 @@ import {
 export default function App() {
   const [view, setView] = useState<'student' | 'admin'>('student');
   const [showSettings, setShowSettings] = useState(false);
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
-    return localStorage.getItem('halaqa_admin_auth') === 'true';
+  const [adminRole, setAdminRole] = useState<'master' | 'teacher' | null>(() => {
+    return localStorage.getItem('halaqa_admin_role') as 'master' | 'teacher' | null;
+  });
+  const [adminHalaqaId, setAdminHalaqaId] = useState<string | null>(() => {
+    return localStorage.getItem('halaqa_admin_id');
   });
   const [adminPassword, setAdminPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
@@ -46,19 +49,30 @@ export default function App() {
   // Handle Admin Login
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminPassword === 'الحرم') {
-      setIsAdminAuthenticated(true);
-      localStorage.setItem('halaqa_admin_auth', 'true');
+    if (adminPassword === 'نور') {
+      setAdminRole('master');
+      localStorage.setItem('halaqa_admin_role', 'master');
       setPasswordError(false);
     } else {
-      setPasswordError(true);
-      setTimeout(() => setPasswordError(false), 2000);
+      const matchedHalaqa = halaqat.find(h => h.password && h.password === adminPassword);
+      if (matchedHalaqa) {
+        setAdminRole('teacher');
+        setAdminHalaqaId(matchedHalaqa.id);
+        localStorage.setItem('halaqa_admin_role', 'teacher');
+        localStorage.setItem('halaqa_admin_id', matchedHalaqa.id);
+        setPasswordError(false);
+      } else {
+        setPasswordError(true);
+        setTimeout(() => setPasswordError(false), 2000);
+      }
     }
   };
 
   const handleAdminLogout = () => {
-    setIsAdminAuthenticated(false);
-    localStorage.removeItem('halaqa_admin_auth');
+    setAdminRole(null);
+    setAdminHalaqaId(null);
+    localStorage.removeItem('halaqa_admin_role');
+    localStorage.removeItem('halaqa_admin_id');
     setView('student');
   };
 
@@ -104,7 +118,7 @@ export default function App() {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const cutoffDate = format(sevenDaysAgo, 'yyyy-MM-dd');
 
-    if (isAdminAuthenticated) {
+    if (adminRole === 'master') {
       const cleanupOldReports = async () => {
         try {
           const oldReportsQuery = query(collection(db, 'reports'), where('date', '<', cutoffDate));
@@ -417,7 +431,7 @@ export default function App() {
               exit={{ opacity: 0, x: 20 }}
               className="space-y-8"
             >
-              {!isAdminAuthenticated ? (
+              {!adminRole ? (
                 <div className="max-w-md mx-auto pt-12">
                   <motion.form 
                     onSubmit={handleAdminLogin}
@@ -469,7 +483,7 @@ export default function App() {
                   <AdminPanel 
                     reports={reports} 
                     students={students} 
-                    halaqat={halaqat}
+                    halaqat={adminRole === 'teacher' && adminHalaqaId ? halaqat.filter(h => h.id === adminHalaqaId) : halaqat}
                     onDeleteReport={handleDeleteReport}
                     onToggleDeferred={handleToggleDeferred}
                     onUpdateReport={handleUpdateReport}
@@ -495,7 +509,8 @@ export default function App() {
                       >
                          <StudentManager 
                            students={students} 
-                           halaqat={halaqat}
+                           halaqat={adminRole === 'teacher' && adminHalaqaId ? halaqat.filter(h => h.id === adminHalaqaId) : halaqat}
+                           adminRole={adminRole}
                            onAddHalaqa={handleAddHalaqa}
                            onUpdateHalaqa={handleUpdateHalaqa}
                            onDeleteHalaqa={handleDeleteHalaqa}
