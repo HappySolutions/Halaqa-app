@@ -28,6 +28,7 @@ export interface Report {
   timestamp: number;
   date: string; // YYYY-MM-DD
   turnOrder?: number;
+  isDeleted?: boolean;
 }
 
 export type UpdateReportData = Partial<Omit<Report, 'id' | 'studentId' | 'studentName' | 'halaqaId'>>;

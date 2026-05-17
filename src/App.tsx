@@ -24,7 +24,8 @@ import {
   updateDoc,
   query,
   serverTimestamp,
-  getDocs
+  getDocs,
+  where
 } from 'firebase/firestore';
 
 export default function App() {
@@ -98,23 +99,29 @@ export default function App() {
       console.error("Error fetching students:", error);
     });
 
-    // Auto-cleanup: delete reports older than 7 days (client-side filtering, no index needed)
-    const cleanupOldReports = async () => {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const cutoffDate = format(sevenDaysAgo, 'yyyy-MM-dd');
-      const allReportsSnapshot = await getDocs(collection(db, 'reports'));
-      allReportsSnapshot.forEach(async (document) => {
-        const data = document.data();
-        if (data.date && data.date < cutoffDate) {
-          await deleteDoc(doc(db, 'reports', document.id));
-        }
-      });
-    };
-    cleanupOldReports();
+    // Auto-cleanup: delete reports older than 7 days (Admin only to save quota)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const cutoffDate = format(sevenDaysAgo, 'yyyy-MM-dd');
 
-    // Simple query with no ordering (sort client-side to avoid needing a composite index)
-    const unsubscribeReports = onSnapshot(query(collection(db, 'reports')), (snapshot) => {
+    if (isAdminAuthenticated) {
+      const cleanupOldReports = async () => {
+        try {
+          const oldReportsQuery = query(collection(db, 'reports'), where('date', '<', cutoffDate));
+          const oldReportsSnapshot = await getDocs(oldReportsQuery);
+          oldReportsSnapshot.forEach(async (document) => {
+            await deleteDoc(doc(db, 'reports', document.id));
+          });
+        } catch (error) {
+          console.error("Error cleaning up old reports:", error);
+        }
+      };
+      cleanupOldReports();
+    }
+
+    // Only fetch reports from the last 7 days to dramatically reduce document reads
+    const recentReportsQuery = query(collection(db, 'reports'), where('date', '>=', cutoffDate));
+    const unsubscribeReports = onSnapshot(recentReportsQuery, (snapshot) => {
       const reportsData: Report[] = [];
       snapshot.forEach((document) => {
         const data = document.data();
@@ -176,9 +183,19 @@ export default function App() {
   const handleDeleteReport = async (id: string) => {
     if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
     try {
-      await deleteDoc(doc(db, 'reports', id));
+      // Soft delete
+      await updateDoc(doc(db, 'reports', id), { isDeleted: true });
     } catch (error) {
       console.error("Error deleting report: ", error);
+    }
+  };
+
+  const handleRestoreReport = async (id: string) => {
+    if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
+    try {
+      await updateDoc(doc(db, 'reports', id), { isDeleted: false });
+    } catch (error) {
+      console.error("Error restoring report: ", error);
     }
   };
 
@@ -227,10 +244,10 @@ export default function App() {
     const today = format(new Date(), 'yyyy-MM-dd');
     const todayReports = reports.filter(r => r.date === today);
     
-    // Delete all reports for today
+    // Soft delete all reports for today
     for (const report of todayReports) {
       try {
-        await deleteDoc(doc(db, 'reports', report.id));
+        await updateDoc(doc(db, 'reports', report.id), { isDeleted: true });
       } catch (error) {
         console.error("Error clearing report: ", error);
       }
@@ -458,6 +475,7 @@ export default function App() {
                     onUpdateReport={handleUpdateReport}
                     onResequenceReports={handleResequenceReports}
                     onClearAll={handleClearToday}
+                    onRestoreReport={handleRestoreReport}
                   />
                   
                   <div className="max-w-4xl mx-auto px-4 sm:px-8">

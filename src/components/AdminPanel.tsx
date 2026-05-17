@@ -15,6 +15,7 @@ interface AdminPanelProps {
   onUpdateReport: (id: string, data: any) => void;
   onResequenceReports: (halaqaId: string) => void;
   onClearAll: () => void;
+  onRestoreReport: (id: string) => void;
 }
 
 export function AdminPanel({ 
@@ -25,7 +26,8 @@ export function AdminPanel({
   onToggleDeferred, 
   onUpdateReport, 
   onResequenceReports, 
-  onClearAll 
+  onClearAll,
+  onRestoreReport
 }: AdminPanelProps) {
   const [selectedHalaqaId, setSelectedHalaqaId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -50,13 +52,22 @@ export function AdminPanel({
     const effectiveDate = getEffectiveDateForHalaqa(currentHalaqa);
 
     return reports
-      .filter(r => r.date === effectiveDate && r.halaqaId === selectedHalaqaId)
+      .filter(r => r.date === effectiveDate && r.halaqaId === selectedHalaqaId && !r.isDeleted)
       .sort((a, b) => {
         if (a.isAbsent !== b.isAbsent) return a.isAbsent ? 1 : -1;
         const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
         const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
         return valA - valB;
       });
+  }, [reports, selectedHalaqaId, halaqat]);
+
+  const deletedReports = useMemo(() => {
+    const currentHalaqa = halaqat.find(h => h.id === selectedHalaqaId);
+    const effectiveDate = getEffectiveDateForHalaqa(currentHalaqa);
+
+    return reports
+      .filter(r => r.date === effectiveDate && r.halaqaId === selectedHalaqaId && r.isDeleted)
+      .sort((a, b) => b.timestamp - a.timestamp);
   }, [reports, selectedHalaqaId, halaqat]);
 
   const stats = useMemo(() => {
@@ -356,6 +367,35 @@ export function AdminPanel({
               </div>
             )}
           </div>
+
+          {deletedReports.length > 0 && (
+            <div className="mt-8 border-t border-slate-200 pt-6">
+              <h4 className="text-sm font-bold text-red-600 mb-4 flex items-center gap-2">
+                <Trash2 className="w-4 h-4" />
+                سلة المهملات (محذوفات اليوم)
+              </h4>
+              <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar opacity-70 hover:opacity-100 transition-opacity">
+                {deletedReports.map(report => (
+                  <div key={report.id} className="flex items-center justify-between p-2 bg-red-50 border border-red-100 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-red-800 line-through">{report.studentName}</span>
+                      <span className="text-[9px] text-red-500">
+                        {report.isAbsent ? 'غائبة' : `${report.pagesReviewed} وجه`}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => onRestoreReport(report.id)}
+                      className="text-[10px] bg-white border border-red-200 text-red-600 hover:bg-red-600 hover:text-white px-2 py-1 rounded transition-all flex items-center gap-1 font-bold"
+                      title="استعادة السجل"
+                    >
+                      <RefreshCcw className="w-3 h-3" />
+                      استعادة
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

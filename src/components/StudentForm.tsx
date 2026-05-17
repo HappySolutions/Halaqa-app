@@ -61,7 +61,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
 
   const existingReport = useMemo(() => {
     if (!studentId || !selectedHalaqaId) return null;
-    return reports.find(r => r.studentId === studentId && r.date === currentEffectiveDate);
+    return reports.find(r => r.studentId === studentId && r.date === currentEffectiveDate && !r.isDeleted);
   }, [studentId, reports, selectedHalaqaId, currentEffectiveDate]);
 
   const isDuplicate = useMemo(() => {
@@ -90,7 +90,12 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
       const nextTimeInMinutes = nextH * 60 + nextM;
 
       // Restriction: Between lockTime and nextDayTime
-      return currentTimeInMinutes >= lockTimeInMinutes && currentTimeInMinutes < nextTimeInMinutes;
+      if (lockTimeInMinutes <= nextTimeInMinutes) {
+        return currentTimeInMinutes >= lockTimeInMinutes && currentTimeInMinutes < nextTimeInMinutes;
+      } else {
+        // Lock goes past midnight (e.g., 23:00 to 08:00)
+        return currentTimeInMinutes >= lockTimeInMinutes || currentTimeInMinutes < nextTimeInMinutes;
+      }
     } catch (e) {
       return false;
     }
@@ -252,9 +257,14 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
                 <h2 className="text-xl font-bold text-slate-800">
                   {editingReportId ? 'تعديل البيانات' : 'تسجيل الحالة اليومية'}
                 </h2>
-                <p className="text-xs text-emerald-600 font-bold mt-1">
-                  {halaqat.find(h => h.id === selectedHalaqaId)?.name}
-                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-xs text-emerald-600 font-bold">
+                    {halaqat.find(h => h.id === selectedHalaqaId)?.name}
+                  </p>
+                  <span className="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full" dir="ltr">
+                    {currentEffectiveDate}
+                  </span>
+                </div>
               </div>
               {!editingReportId && (
                 <button
@@ -524,13 +534,13 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
               قائمة مسجلات {halaqat.find(h => h.id === selectedHalaqaId)?.name}
             </h3>
             <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full">
-              {reports.filter(r => r.date === currentEffectiveDate && r.halaqaId === selectedHalaqaId).length} طالبة
+              {reports.filter(r => r.date === currentEffectiveDate && r.halaqaId === selectedHalaqaId && !r.isDeleted).length} طالبة
             </span>
           </div>
 
           <div className="space-y-3">
             {reports
-              .filter(r => r.date === currentEffectiveDate && r.halaqaId === selectedHalaqaId)
+              .filter(r => r.date === currentEffectiveDate && r.halaqaId === selectedHalaqaId && !r.isDeleted)
               .sort((a, b) => {
                 if (a.isAbsent !== b.isAbsent) return a.isAbsent ? 1 : -1;
                 const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
@@ -581,7 +591,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
                 </motion.div>
               ))}
 
-            {reports.filter(r => r.date === currentEffectiveDate && r.halaqaId === selectedHalaqaId).length === 0 && (
+            {reports.filter(r => r.date === currentEffectiveDate && r.halaqaId === selectedHalaqaId && !r.isDeleted).length === 0 && (
               <div className="text-center py-10 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
                 <p className="text-sm text-slate-400 italic">لم يتم تسجيل أي طالبة في هذه الحلقة بعد</p>
               </div>
