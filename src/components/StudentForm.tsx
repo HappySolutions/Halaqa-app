@@ -20,7 +20,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
   const [editingReportId, setEditingReportId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [pages, setPages] = useState<number>(1);
+  const [pages, setPages] = useState<number>(0);
   const [surahs, setSurahs] = useState('');
   const [hasReviewed, setHasReviewed] = useState(true);
   const [isAbsent, setIsAbsent] = useState(false);
@@ -155,7 +155,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
       setStudentId('');
       setEditingReportId(null);
       setSearchTerm('');
-      setPages(1);
+      setPages(0);
       setSurahs('');
       setIsAbsent(false);
       setAbsenceReason('');
@@ -378,22 +378,6 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
 
             {(!isDuplicate || editingReportId) && (
               <>
-                <div
-                  onClick={() => setIsAbsent(!isAbsent)}
-                  className={cn(
-                    "w-full h-12 flex items-center gap-3 rounded-xl px-4 cursor-pointer transition-all border",
-                    isAbsent ? "bg-red-50 border-red-200 text-red-700" : "bg-slate-50 border-slate-200 text-slate-500"
-                  )}
-                >
-                  <div className={cn(
-                    "w-5 h-5 rounded-md border flex items-center justify-center transition-all",
-                    isAbsent ? "bg-red-600 border-red-600 text-white" : "border-slate-300"
-                  )}>
-                    {isAbsent && <Check className="w-3 h-3" />}
-                  </div>
-                  <span className="text-sm font-bold">الطالبة غائبة اليوم</span>
-                </div>
-
                 <AnimatePresence mode="wait">
                   {isAbsent ? (
                     <motion.div
@@ -424,6 +408,19 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
                       className="space-y-6 overflow-hidden"
                     >
                       <div className="space-y-2">
+                        <label className="text-sm font-semibold text-slate-700">عدد أوجه المراجعة</label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.5"
+                          required={!isAbsent}
+                          value={pages}
+                          onChange={(e) => setPages(parseFloat(e.target.value))}
+                          className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
                         <label className="text-sm font-semibold text-slate-700">السورة / السور التي تمت مراجعتها</label>
                         <input
                           type="text"
@@ -435,41 +432,43 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
                         />
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-semibold text-slate-700">عدد أوجه المراجعة</label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.5"
-                            required={!isAbsent}
-                            value={pages}
-                            onChange={(e) => setPages(parseFloat(e.target.value))}
-                            className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-semibold text-slate-700">مراجعة</label>
-                          <div
-                            onClick={() => setHasReviewed(!hasReviewed)}
-                            className={cn(
-                              "w-full h-12 flex items-center gap-2 rounded-xl px-4 cursor-pointer transition-all border",
-                              hasReviewed ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-slate-50 border-slate-200 text-slate-400"
-                            )}
-                          >
-                            <div className={cn(
-                              "w-4 h-4 rounded border flex items-center justify-center transition-all",
-                              hasReviewed ? "bg-emerald-600 border-emerald-600 text-white" : "border-slate-300"
-                            )}>
-                              {hasReviewed && <Check className="w-3 h-3" />}
-                            </div>
-                            <span className="text-sm font-medium">تمت المراجعة</span>
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-slate-700">مراجعة</label>
+                        <div
+                          onClick={() => setHasReviewed(!hasReviewed)}
+                          className={cn(
+                            "w-full h-12 flex items-center gap-2 rounded-xl px-4 cursor-pointer transition-all border",
+                            hasReviewed ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-slate-50 border-slate-200 text-slate-400"
+                          )}
+                        >
+                          <div className={cn(
+                            "w-4 h-4 rounded border flex items-center justify-center transition-all",
+                            hasReviewed ? "bg-emerald-600 border-emerald-600 text-white" : "border-slate-300"
+                          )}>
+                            {hasReviewed && <Check className="w-3 h-3" />}
                           </div>
+                          <span className="text-sm font-medium">تمت المراجعة</span>
                         </div>
                       </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
+
+                <div
+                  onClick={() => setIsAbsent(!isAbsent)}
+                  className={cn(
+                    "w-full h-12 flex items-center gap-3 rounded-xl px-4 cursor-pointer transition-all border",
+                    isAbsent ? "bg-red-50 border-red-200 text-red-700" : "bg-slate-50 border-slate-200 text-slate-500"
+                  )}
+                >
+                  <div className={cn(
+                    "w-5 h-5 rounded-md border flex items-center justify-center transition-all",
+                    isAbsent ? "bg-red-600 border-red-600 text-white" : "border-slate-300"
+                  )}>
+                    {isAbsent && <Check className="w-3 h-3" />}
+                  </div>
+                  <span className="text-sm font-bold">الطالبة غائبة اليوم</span>
+                </div>
               </>
             )}
 
