@@ -18,22 +18,22 @@ interface AdminPanelProps {
   onRestoreReport: (id: string) => void;
 }
 
-export function AdminPanel({ 
-  reports, 
-  students, 
+export function AdminPanel({
+  reports,
+  students,
   halaqat,
-  onDeleteReport, 
-  onToggleDeferred, 
-  onUpdateReport, 
-  onResequenceReports, 
+  onDeleteReport,
+  onToggleDeferred,
+  onUpdateReport,
+  onResequenceReports,
   onClearAll,
   onRestoreReport
 }: AdminPanelProps) {
   const [selectedHalaqaId, setSelectedHalaqaId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ 
-    surahs: '', 
-    pagesReviewed: 0, 
+  const [editForm, setEditForm] = useState({
+    surahs: '',
+    pagesReviewed: 0,
     hasReviewed: false,
     isAbsent: false,
     absenceReason: '',
@@ -83,8 +83,8 @@ export function AdminPanel({
 
   const handleStartEdit = (report: Report) => {
     setEditingId(report.id);
-    setEditForm({ 
-      surahs: report.surahs, 
+    setEditForm({
+      surahs: report.surahs,
       pagesReviewed: report.pagesReviewed,
       hasReviewed: report.hasReviewed,
       isAbsent: report.isAbsent,
@@ -152,16 +152,16 @@ export function AdminPanel({
       });
     }
 
-    text += `\n👇👇\n`;
-    text += `م.تعني مراجعه\n`;
-    text += `د.يعني درس جديد\n`;
-    text += `علامة✅️انها سمعت لدا المعلمه درس اليوم\n`;
-    text += `علامة ☑️ تعني أن الطالبة راجعت\n`;
-    text += `علامة ↩️ تعني أن الطالبة لم يتسع وقت الحلقة لتسميعها وتم ترحيلها الى اليوم التالي\n`;
-    text += `⁉️لم تحضرالحصه\n`;
-    text += `❌️غائبه بدون عذر\n`;
-    text += `📍🔴اجازه\n`;
-    text += `👆👆`;
+    // text += `\n👇👇\n`;
+    // text += `م.تعني مراجعه\n`;
+    // text += `د.يعني درس جديد\n`;
+    // text += `علامة✅️انها سمعت لدا المعلمه درس اليوم\n`;
+    // text += `علامة ☑️ تعني أن الطالبة راجعت\n`;
+    // text += `علامة ↩️ تعني أن الطالبة لم يتسع وقت الحلقة لتسميعها وتم ترحيلها الى اليوم التالي\n`;
+    // text += `⁉️لم تحضرالحصه\n`;
+    // text += `❌️غائبه بدون عذر\n`;
+    // text += `📍🔴اجازه\n`;
+    // text += `👆👆`;
 
     return text;
   };
@@ -251,7 +251,7 @@ export function AdminPanel({
                 <div className="flex items-center justify-between w-full">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                       <div className={cn(
+                      <div className={cn(
                         "w-1.5 h-1.5 rounded-full",
                         report.isAbsent ? "bg-red-500" : (report.hasReviewed ? "bg-emerald-500" : "bg-slate-300")
                       )} />

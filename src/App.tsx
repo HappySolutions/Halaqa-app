@@ -178,7 +178,7 @@ export default function App() {
       const currentHalaqa = halaqat.find(h => h.id === reportData.halaqaId);
       const effectiveDate = getEffectiveDateForHalaqa(currentHalaqa);
 
-      const todayReports = reports.filter(r => r.date === effectiveDate && r.halaqaId === reportData.halaqaId);
+      const todayReports = reports.filter(r => r.date === effectiveDate && r.halaqaId === reportData.halaqaId && !r.isDeleted);
       const maxTurn = todayReports.length > 0 ? Math.max(...todayReports.map(r => r.turnOrder ?? 0)) : 0;
       
       await addDoc(collection(db, 'reports'), {
@@ -271,8 +271,9 @@ export default function App() {
   const handleResequenceReports = async (halaqaId: string) => {
     if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
     
-    const today = format(new Date(), 'yyyy-MM-dd');
-    const todayReports = reports.filter(r => r.date === today && r.halaqaId === halaqaId);
+    const currentHalaqa = halaqat.find(h => h.id === halaqaId);
+    const effectiveDate = getEffectiveDateForHalaqa(currentHalaqa);
+    const todayReports = reports.filter(r => r.date === effectiveDate && r.halaqaId === halaqaId && !r.isDeleted);
     
     const present = todayReports.filter(r => !r.isAbsent).sort((a, b) => {
       const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
