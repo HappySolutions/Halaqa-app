@@ -140,6 +140,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
       hasReviewed: isAbsent ? false : hasReviewed,
       isAbsent,
       absenceReason: isAbsent ? absenceReason : '',
+      isDeferred: false,
     };
 
     if (editingReportId) {

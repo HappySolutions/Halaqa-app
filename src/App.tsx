@@ -133,8 +133,12 @@ export default function App() {
       cleanupOldReports();
     }
 
-    // Only fetch reports from the last 7 days to dramatically reduce document reads
-    const recentReportsQuery = query(collection(db, 'reports'), where('date', '>=', cutoffDate));
+    // Only fetch reports from the last 2 days for the active UI to dramatically reduce document reads
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    const queryCutoffDate = format(twoDaysAgo, 'yyyy-MM-dd');
+
+    const recentReportsQuery = query(collection(db, 'reports'), where('date', '>=', queryCutoffDate));
     const unsubscribeReports = onSnapshot(recentReportsQuery, (snapshot) => {
       const reportsData: Report[] = [];
       snapshot.forEach((document) => {
@@ -222,14 +226,17 @@ export default function App() {
       const isNowDeferred = !report.isDeferred;
       let newDate = report.date;
 
+      const currentHalaqa = halaqat.find(h => h.id === report.halaqaId);
+      const effectiveDate = getEffectiveDateForHalaqa(currentHalaqa);
+
       if (isNowDeferred) {
         // Calculate next working day using our helper
         const currentDate = parseISO(report.date);
         const nextDate = getNextWorkingDay(currentDate);
         newDate = format(nextDate, 'yyyy-MM-dd');
       } else {
-        // If un-deferring, move back to actual today
-        newDate = format(new Date(), 'yyyy-MM-dd');
+        // If un-deferring, move back to the active effective date
+        newDate = effectiveDate;
       }
 
       await updateDoc(doc(db, 'reports', id), {
@@ -253,12 +260,13 @@ export default function App() {
     }
   };
 
-  const handleClearToday = async () => {
+  const handleClearToday = async (halaqaId: string) => {
     if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
-    const today = format(new Date(), 'yyyy-MM-dd');
-    const todayReports = reports.filter(r => r.date === today);
+    const currentHalaqa = halaqat.find(h => h.id === halaqaId);
+    const effectiveDate = getEffectiveDateForHalaqa(currentHalaqa);
+    const todayReports = reports.filter(r => r.date === effectiveDate && r.halaqaId === halaqaId);
     
-    // Soft delete all reports for today
+    // Soft delete all reports for this halaqa on the current effective date
     for (const report of todayReports) {
       try {
         await updateDoc(doc(db, 'reports', report.id), { isDeleted: true });

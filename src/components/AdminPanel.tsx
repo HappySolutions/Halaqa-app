@@ -14,7 +14,7 @@ interface AdminPanelProps {
   onToggleDeferred: (id: string) => void;
   onUpdateReport: (id: string, data: any) => void;
   onResequenceReports: (halaqaId: string) => void;
-  onClearAll: () => void;
+  onClearAll: (halaqaId: string) => void;
   onRestoreReport: (id: string) => void;
 }
 
@@ -94,7 +94,10 @@ export function AdminPanel({
   };
 
   const handleSaveEdit = (id: string) => {
-    onUpdateReport(id, editForm);
+    onUpdateReport(id, {
+      ...editForm,
+      isDeferred: false
+    });
     setEditingId(null);
   };
 
@@ -231,7 +234,7 @@ export function AdminPanel({
               </button>
               <button
                 onClick={() => {
-                  if (confirm('هل أنت متأكد من حذف جميع تقارير هذه الحلقة اليوم؟')) onClearAll();
+                  if (selectedHalaqaId && confirm('هل أنت متأكد من حذف جميع تقارير هذه الحلقة اليوم؟')) onClearAll(selectedHalaqaId);
                 }}
                 className="p-2 text-slate-300 hover:text-red-500 transition-all"
                 title="حذف الكل"
