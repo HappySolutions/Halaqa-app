@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { Clipboard, Trash2, Users, Check, RefreshCcw, LayoutGrid } from 'lucide-react';
+import { Clipboard, Trash2, Users, Check, RefreshCcw, LayoutGrid, AlertTriangle } from 'lucide-react';
 import { Report, Student, Halaqa } from '@/types';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { cn, getEffectiveDateForHalaqa } from '@/lib/utils';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface AdminPanelProps {
   reports: Report[];
@@ -31,6 +31,7 @@ export function AdminPanel({
 }: AdminPanelProps) {
   const [selectedHalaqaId, setSelectedHalaqaId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showClearModal, setShowClearModal] = useState(false);
   const [editForm, setEditForm] = useState({
     surahs: '',
     pagesReviewed: 0,
@@ -234,7 +235,7 @@ export function AdminPanel({
               </button>
               <button
                 onClick={() => {
-                  if (selectedHalaqaId && confirm('هل أنت متأكد من حذف جميع تقارير هذه الحلقة اليوم؟')) onClearAll(selectedHalaqaId);
+                  if (selectedHalaqaId) setShowClearModal(true);
                 }}
                 className="p-2 text-slate-300 hover:text-red-500 transition-all"
                 title="حذف الكل"
@@ -443,6 +444,80 @@ export function AdminPanel({
           <Clipboard className="w-4 h-4 group-hover:scale-110 transition-transform" />
         </button>
       </div>
+
+      {/* Custom Confirmation Modal */}
+      <AnimatePresence>
+        {showClearModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowClearModal(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            
+            {/* Modal Card */}
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-red-100 overflow-hidden z-10 text-right p-6 sm:p-8"
+            >
+              <div className="flex flex-col items-center text-center space-y-4">
+                {/* Warning Icon Badge */}
+                <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center animate-pulse">
+                  <AlertTriangle className="w-8 h-8" />
+                </div>
+                
+                <h3 className="text-lg font-black text-slate-800">
+                  تنبيه هام جداً! ⚠️
+                </h3>
+                
+                <p className="text-sm text-slate-500 leading-relaxed">
+                  أنتِ على وشك <strong>حذف جميع تقارير وبطاقات اليوم</strong> لحلقة <span className="font-bold text-red-600">({halaqat.find(h => h.id === selectedHalaqaId)?.name})</span>.
+                </p>
+                
+                <div className="bg-red-50/50 border border-red-100 rounded-xl p-4 text-xs text-red-800 text-right w-full space-y-2 leading-relaxed" dir="rtl">
+                  <p className="font-bold text-red-700">⚠️ ماذا يعني هذا الإجراء؟</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>سيتم إزالة جميع الحاضرات والغائبات المسجلات اليوم.</li>
+                    <li>
+                      <strong>ملاحظة هامة:</strong> يشمل هذا حذف تقارير الطالبات اللواتي <strong>تم ترحيلهن من الأمس</strong> ونقلهن لسلة المهملات!
+                    </li>
+                  </ul>
+                </div>
+                
+                <p className="text-xs text-slate-400">
+                  يمكنكِ دائماً استعادة التقارير الفردية من سلة المهملات لاحقاً إذا لزم الأمر.
+                </p>
+                
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 w-full pt-4">
+                  <button
+                    onClick={() => {
+                      if (selectedHalaqaId) {
+                        onClearAll(selectedHalaqaId);
+                        setShowClearModal(false);
+                      }
+                    }}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-red-100 text-sm order-1 sm:order-2"
+                  >
+                    نعم، احذف الكل 🗑️
+                  </button>
+                  <button
+                    onClick={() => setShowClearModal(false)}
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-all text-sm order-2 sm:order-1"
+                  >
+                    تراجع وإلغاء ❌
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
