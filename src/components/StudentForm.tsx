@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Check, Send, User, Search, ChevronDown, X, AlertCircle, Users, LayoutGrid, Trash2 } from 'lucide-react';
+import { Check, Send, User, Search, ChevronDown, X, AlertCircle, Users, LayoutGrid } from 'lucide-react';
 import { Student, Report, Halaqa } from '@/types';
 import { cn, getEffectiveDateForHalaqa } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -11,10 +11,9 @@ interface StudentFormProps {
   halaqat: Halaqa[];
   onSubmit: (report: Omit<Report, 'id' | 'timestamp' | 'date' | 'isDeferred'>) => void;
   onUpdate: (id: string, data: any) => void;
-  onDelete: (id: string) => void;
 }
 
-export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, onDelete }: StudentFormProps) {
+export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: StudentFormProps) {
   const [selectedHalaqaId, setSelectedHalaqaId] = useState<string | null>(null);
   const [studentId, setStudentId] = useState('');
   const [editingReportId, setEditingReportId] = useState<string | null>(null);
@@ -25,7 +24,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
   const [hasReviewed, setHasReviewed] = useState(true);
   const [isAbsent, setIsAbsent] = useState(false);
   const [absenceReason, setAbsenceReason] = useState('');
-  const [submitType, setSubmitType] = useState<'create' | 'update' | 'delete' | null>(null);
+  const [submitType, setSubmitType] = useState<'create' | 'update' | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -239,10 +238,10 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
               <Check className="w-10 h-10" />
             </div>
             <h2 className="text-2xl font-bold text-slate-800 mb-2">
-              {submitType === 'delete' ? 'تم حذف التسجيل بنجاح!' : submitType === 'update' ? 'تم تحديث البيانات بنجاح!' : 'تم التسجيل بنجاح!'}
+              {submitType === 'update' ? 'تم تحديث البيانات بنجاح!' : 'تم التسجيل بنجاح!'}
             </h2>
             <p className="text-slate-500">
-              {submitType === 'delete' ? 'تمت إزالة بياناتك لهذا اليوم.' : 'بارك الله في جهودكِ.'}
+              {'بارك الله في جهودكِ.'}
             </p>
           </motion.div>
         ) : (
@@ -489,36 +488,19 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
               </button>
 
               {editingReportId && (
-                <div className="grid grid-cols-2 gap-3 mt-2">
-                  {/* <button
-                    type="button"
-                    onClick={() => {
-                      if (confirm('هل أنت متأكدة من حذف هذا التسجيل؟')) {
-                        onDelete(editingReportId);
-                        handleChangeHalaqa(); // reset form
-                        setSubmitType('delete');
-                        setTimeout(() => setSubmitType(null), 3000);
-                      }
-                    }}
-                    className="w-full bg-red-50 border border-red-200 hover:bg-red-100 text-red-600 font-bold py-2 rounded-xl transition-all text-sm flex items-center justify-center gap-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    حذف التسجيل
-                  </button> */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingReportId(null);
-                      setStudentId('');
-                      setPages(0);
-                      setSurahs('');
-                      setIsAbsent(false);
-                    }}
-                    className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded-xl transition-all text-sm"
-                  >
-                    إلغاء التعديل
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingReportId(null);
+                    setStudentId('');
+                    setPages(0);
+                    setSurahs('');
+                    setIsAbsent(false);
+                  }}
+                  className="w-full mt-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded-xl transition-all text-sm"
+                >
+                  إلغاء التعديل
+                </button>
               )}
             </div>
           </motion.form>

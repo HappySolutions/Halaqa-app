@@ -429,7 +429,6 @@ export default function App() {
                 halaqat={halaqat}
                 onSubmit={handleAddReport} 
                 onUpdate={handleUpdateReport}
-                onDelete={handleDeleteReport}
               />
             </motion.div>
           ) : (
