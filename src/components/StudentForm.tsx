@@ -490,7 +490,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
 
               {editingReportId && (
                 <div className="grid grid-cols-2 gap-3 mt-2">
-                  <button
+                  {/* <button
                     type="button"
                     onClick={() => {
                       if (confirm('هل أنت متأكدة من حذف هذا التسجيل؟')) {
@@ -504,7 +504,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate, on
                   >
                     <Trash2 className="w-4 h-4" />
                     حذف التسجيل
-                  </button>
+                  </button> */}
                   <button
                     type="button"
                     onClick={() => {
