@@ -355,12 +355,12 @@ export function AdminPanel({
                     >
                       ↩️
                     </button>
-                    <button
+                    {/* <button
                       onClick={() => onDeleteReport(report.id)}
                       className="p-1.5 text-slate-400 hover:text-red-500 transition-all"
                     >
                       <Trash2 className="w-4 h-4" />
-                    </button>
+                    </button> */}
                   </div>
                 </div>
               </motion.div>
