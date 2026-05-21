@@ -233,7 +233,7 @@ export function AdminPanel({
               >
                 <RefreshCcw className="w-4 h-4" />
               </button>
-              <button
+              {/* <button
                 onClick={() => {
                   if (selectedHalaqaId) setShowClearModal(true);
                 }}
@@ -241,7 +241,7 @@ export function AdminPanel({
                 title="حذف الكل"
               >
                 <Trash2 className="w-4 h-4" />
-              </button>
+              </button> */}
             </div>
           </div>
 
