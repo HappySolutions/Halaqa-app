@@ -5,7 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-import { format, addDays, getDay } from 'date-fns';
+import { format, addDays, getDay, parseISO } from 'date-fns';
 import { Halaqa } from '../types';
 
 export const getNextWorkingDay = (currentDate: Date) => {
@@ -15,6 +15,15 @@ export const getNextWorkingDay = (currentDate: Date) => {
     next = addDays(next, 1);
   }
   return next;
+};
+
+/** Ensure the date is not Friday or Saturday (no halaqa on weekends). */
+export const ensureWorkingDay = (date: Date): Date => {
+  let result = date;
+  while (getDay(result) === 5 || getDay(result) === 6) {
+    result = getNextWorkingDay(result);
+  }
+  return result;
 };
 
 export const getEffectiveDateForHalaqa = (halaqa?: Halaqa) => {
@@ -31,6 +40,10 @@ export const getEffectiveDateForHalaqa = (halaqa?: Halaqa) => {
   if (ksaHours > limitH || (ksaHours === limitH && ksaMinutes >= limitM)) {
     effectiveDate = format(getNextWorkingDay(ksaDate), 'yyyy-MM-dd');
   }
+
+  // Halaqat don't run Fri/Sat — align all circles to the next working day
+  // (e.g. Isha with a later nextDayRegStartTime would otherwise stay on Saturday)
+  effectiveDate = format(ensureWorkingDay(parseISO(effectiveDate)), 'yyyy-MM-dd');
 
   return effectiveDate;
 };

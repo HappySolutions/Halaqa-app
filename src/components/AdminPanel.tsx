@@ -355,12 +355,18 @@ export function AdminPanel({
                     >
                       ↩️
                     </button>
-                    {/* <button
-                      onClick={() => onDeleteReport(report.id)}
+                    <button
+                      onClick={() => {
+                        if (confirm(`هل تريدين حذف بطاقة «${report.studentName}» من قائمة اليوم؟\n\nيمكنكِ استعادتها لاحقاً من سلة المهملات.`)) {
+                          if (editingId === report.id) setEditingId(null);
+                          onDeleteReport(report.id);
+                        }
+                      }}
                       className="p-1.5 text-slate-400 hover:text-red-500 transition-all"
+                      title="حذف من القائمة"
                     >
                       <Trash2 className="w-4 h-4" />
-                    </button> */}
+                    </button>
                   </div>
                 </div>
               </motion.div>

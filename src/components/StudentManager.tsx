@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, UserPlus, Users, LayoutGrid, Settings2, Check, X, Pencil } from 'lucide-react';
+import { Plus, Users, LayoutGrid, Settings2, Check, X, Pencil, Trash2 } from 'lucide-react';
 import { Student, Halaqa } from '@/types';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -11,7 +11,6 @@ interface StudentManagerProps {
   onUpdateHalaqa: (id: string, data: Partial<Halaqa>) => void;
   onDeleteHalaqa: (id: string) => void;
   onAdd: (name: string, halaqaId: string) => void;
-  onRemove: (id: string) => void;
   onUpdateStudent: (id: string, name: string) => void;
   onBulkAdd: (halaqaId: string, names: string[]) => void;
   adminRole: 'master' | 'teacher' | null;
@@ -24,7 +23,6 @@ export function StudentManager({
   onUpdateHalaqa,
   onDeleteHalaqa, 
   onAdd, 
-  onRemove,
   onUpdateStudent,
   onBulkAdd,
   adminRole
@@ -336,14 +334,6 @@ export function StudentManager({
                           className="p-1 text-slate-400 hover:text-emerald-600 transition-all"
                         >
                           <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm('هل أنت متأكد من حذف هذه الطالبة؟')) onRemove(student.id);
-                          }}
-                          className="p-1 text-slate-400 hover:text-red-500 transition-all"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </>

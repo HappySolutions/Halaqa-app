@@ -523,7 +523,6 @@ export default function App() {
                            onUpdateHalaqa={handleUpdateHalaqa}
                            onDeleteHalaqa={handleDeleteHalaqa}
                            onAdd={handleAddStudent} 
-                           onRemove={handleRemoveStudent} 
                            onUpdateStudent={handleUpdateStudent}
                            onBulkAdd={handleBulkAddStudents}
                          />
