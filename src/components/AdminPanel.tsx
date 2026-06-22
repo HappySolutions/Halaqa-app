@@ -346,7 +346,14 @@ export function AdminPanel({
                       <span className="text-sm">✏️</span>
                     </button>
                     <button
-                      onClick={() => onToggleDeferred(report.id)}
+                      onClick={() => {
+                        const message = report.isDeferred
+                          ? `هل تريدين إلغاء ترحيل الطالبة «${report.studentName}» وإعادتها لقائمة اليوم؟`
+                          : `هل تريدين ترحيل الطالبة «${report.studentName}» إلى اليوم العمل التالي؟`;
+                        if (confirm(message)) {
+                          onToggleDeferred(report.id);
+                        }
+                      }}
                       title={report.isDeferred ? "إلغاء الترحيل" : "ترحيل للغد"}
                       className={cn(
                         "p-1.5 rounded transition-all text-lg",

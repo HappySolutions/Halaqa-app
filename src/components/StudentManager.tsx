@@ -12,6 +12,7 @@ interface StudentManagerProps {
   onDeleteHalaqa: (id: string) => void;
   onAdd: (name: string, halaqaId: string) => void;
   onUpdateStudent: (id: string, name: string) => void;
+  onRemoveStudent: (id: string) => void;
   onBulkAdd: (halaqaId: string, names: string[]) => void;
   adminRole: 'master' | 'teacher' | null;
 }
@@ -24,6 +25,7 @@ export function StudentManager({
   onDeleteHalaqa, 
   onAdd, 
   onUpdateStudent,
+  onRemoveStudent,
   onBulkAdd,
   adminRole
 }: StudentManagerProps) {
@@ -332,8 +334,20 @@ export function StudentManager({
                         <button
                           onClick={() => handleStartEditStudent(student)}
                           className="p-1 text-slate-400 hover:text-emerald-600 transition-all"
+                          title="تعديل الاسم"
                         >
                           <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`هل أنتِ متأكدة من حذف الطالبة «${student.name}» من الحلقة؟`)) {
+                              onRemoveStudent(student.id);
+                            }
+                          }}
+                          className="p-1 text-slate-400 hover:text-red-500 transition-all"
+                          title="حذف الاسم"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </>

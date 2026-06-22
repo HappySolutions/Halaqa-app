@@ -524,6 +524,7 @@ export default function App() {
                            onDeleteHalaqa={handleDeleteHalaqa}
                            onAdd={handleAddStudent} 
                            onUpdateStudent={handleUpdateStudent}
+                           onRemoveStudent={handleRemoveStudent}
                            onBulkAdd={handleBulkAddStudents}
                          />
                       </motion.div>
