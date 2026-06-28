@@ -71,6 +71,15 @@ export function AdminPanel({
       .sort((a, b) => b.timestamp - a.timestamp);
   }, [reports, selectedHalaqaId, halaqat]);
 
+  const deferredReports = useMemo(() => {
+    const currentHalaqa = halaqat.find(h => h.id === selectedHalaqaId);
+    const effectiveDate = getEffectiveDateForHalaqa(currentHalaqa);
+
+    return reports
+      .filter(r => r.halaqaId === selectedHalaqaId && r.isDeferred && r.date !== effectiveDate && !r.isDeleted)
+      .sort((a, b) => b.timestamp - a.timestamp);
+  }, [reports, selectedHalaqaId, halaqat]);
+
   const stats = useMemo(() => {
     const halaqaStudents = students.filter(s => s.halaqaId === selectedHalaqaId);
     const total = halaqaStudents.length;
@@ -377,6 +386,34 @@ export function AdminPanel({
               </div>
             )}
           </div>
+
+          {deferredReports.length > 0 && (
+            <div className="mt-8 border-t border-slate-200 pt-6">
+              <h4 className="text-sm font-bold text-amber-600 mb-4 flex items-center gap-2">
+                <span className="text-base">↩️</span>
+                الطالبات المحولات لليوم التالي ({deferredReports.length})
+              </h4>
+              <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                {deferredReports.map(report => (
+                  <div key={report.id} className="flex items-center justify-between p-2.5 bg-amber-50/60 border border-amber-100/70 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-amber-800">{report.studentName}</span>
+                      <span className="text-[10px] text-amber-600 bg-amber-100/50 px-1.5 py-0.5 rounded font-medium">
+                        {report.isAbsent ? 'غائبة' : `${report.pagesReviewed} وجه - ${report.surahs || 'مراجعة'}`}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => onToggleDeferred(report.id)}
+                      className="text-[10px] bg-white hover:bg-amber-600 hover:text-white border border-amber-200 text-amber-700 px-2.5 py-1 rounded-lg transition-all font-bold shadow-sm"
+                      title="إلغاء التحويل وإعادة الطالبة لليوم"
+                    >
+                      إلغاء التحويل
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {deletedReports.length > 0 && (
             <div className="mt-8 border-t border-slate-200 pt-6">
