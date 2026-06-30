@@ -80,20 +80,6 @@ export function AdminPanel({
       .sort((a, b) => b.timestamp - a.timestamp);
   }, [reports, selectedHalaqaId, halaqat]);
 
-  const remainingStudents = useMemo(() => {
-    const currentHalaqa = halaqat.find(h => h.id === selectedHalaqaId);
-    const effectiveDate = getEffectiveDateForHalaqa(currentHalaqa);
-    const halaqaStudents = students.filter(s => s.halaqaId === selectedHalaqaId);
-
-    const processedStudentIds = new Set(
-      reports
-        .filter(r => r.halaqaId === selectedHalaqaId && !r.isDeleted && (r.date === effectiveDate || r.isDeferred))
-        .map(r => r.studentId)
-    );
-
-    return halaqaStudents.filter(s => !processedStudentIds.has(s.id));
-  }, [students, reports, selectedHalaqaId, halaqat]);
-
   const stats = useMemo(() => {
     const halaqaStudents = students.filter(s => s.halaqaId === selectedHalaqaId);
     const total = halaqaStudents.length;
@@ -400,25 +386,6 @@ export function AdminPanel({
               </div>
             )}
           </div>
-
-          {remainingStudents.length > 0 && (
-            <div className="mt-8 border-t border-slate-200 pt-6">
-              <h4 className="text-sm font-bold text-sky-600 mb-4 flex items-center gap-2">
-                <span className="text-base">⏳</span>
-                طالبات لم يسجلن مراجعتهن اليوم ({remainingStudents.length})
-              </h4>
-              <div className="flex flex-wrap gap-2 max-h-[150px] overflow-y-auto pr-2 custom-scrollbar">
-                {remainingStudents.map(student => (
-                  <span 
-                    key={student.id} 
-                    className="inline-flex items-center text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-100 px-3 py-1.5 rounded-xl shadow-sm"
-                  >
-                    {student.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
 
           {deferredReports.length > 0 && (
             <div className="mt-8 border-t border-slate-200 pt-6">
