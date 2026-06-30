@@ -80,6 +80,20 @@ export function AdminPanel({
       .sort((a, b) => b.timestamp - a.timestamp);
   }, [reports, selectedHalaqaId, halaqat]);
 
+  const remainingStudents = useMemo(() => {
+    const currentHalaqa = halaqat.find(h => h.id === selectedHalaqaId);
+    if (!currentHalaqa) return [];
+    const effectiveDate = getEffectiveDateForHalaqa(currentHalaqa);
+
+    const registeredStudentIds = new Set(
+      reports
+        .filter(r => r.halaqaId === selectedHalaqaId && !r.isDeleted && (r.date === effectiveDate || r.isDeferred))
+        .map(r => r.studentId)
+    );
+
+    return students.filter(s => s.halaqaId === selectedHalaqaId && !registeredStudentIds.has(s.id));
+  }, [students, reports, selectedHalaqaId, halaqat]);
+
   const stats = useMemo(() => {
     const halaqaStudents = students.filter(s => s.halaqaId === selectedHalaqaId);
     const total = halaqaStudents.length;
@@ -386,6 +400,25 @@ export function AdminPanel({
               </div>
             )}
           </div>
+
+          {remainingStudents.length > 0 && (
+            <div className="mt-8 border-t border-slate-200 pt-6">
+              <h4 className="text-sm font-bold text-slate-500 mb-4 flex items-center gap-2">
+                <span className="text-base">⏳</span>
+                الطالبات المتبقيات اللاتي لم يسجلن اليوم ({remainingStudents.length})
+              </h4>
+              <div className="flex flex-wrap gap-2 max-h-[150px] overflow-y-auto pr-2 custom-scrollbar" dir="rtl">
+                {remainingStudents.map(student => (
+                  <span
+                    key={student.id}
+                    className="inline-flex items-center px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-50 border border-slate-200 text-slate-600 transition-colors hover:bg-slate-100/80 cursor-default"
+                  >
+                    {student.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           {deferredReports.length > 0 && (
             <div className="mt-8 border-t border-slate-200 pt-6">
