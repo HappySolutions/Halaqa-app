@@ -87,7 +87,7 @@ export function AdminPanel({
 
     const registeredStudentIds = new Set(
       reports
-        .filter(r => r.halaqaId === selectedHalaqaId && !r.isDeleted && (r.date === effectiveDate || r.isDeferred))
+        .filter(r => r.halaqaId === selectedHalaqaId && !r.isDeleted && r.date >= effectiveDate)
         .map(r => r.studentId)
     );
 
