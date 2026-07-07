@@ -1,15 +1,15 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Check, Send, User, Search, ChevronDown, X, AlertCircle, Users, LayoutGrid } from 'lucide-react';
 import { Student, Report, Halaqa } from '@/types';
-import { cn, getEffectiveDateForHalaqa, reportSortKey } from '@/lib/utils';
+import { cn, getEffectiveDateForHalaqa, reportSortKey, getNextWorkingDay, ensureWorkingDay } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 interface StudentFormProps {
   students: Student[];
   reports: Report[];
   halaqat: Halaqa[];
-  onSubmit: (report: Omit<Report, 'id' | 'timestamp' | 'date' | 'isDeferred'>) => void;
+  onSubmit: (report: Omit<Report, 'id' | 'timestamp' | 'date' | 'isDeferred'>, customDate?: string) => Promise<void> | void;
   onUpdate: (id: string, data: any) => void;
 }
 
@@ -24,6 +24,8 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
   const [hasReviewed, setHasReviewed] = useState(true);
   const [isAbsent, setIsAbsent] = useState(false);
   const [absenceReason, setAbsenceReason] = useState('');
+  const [isLeave, setIsLeave] = useState(false);
+  const [leaveDays, setLeaveDays] = useState<number | string>('');
   const [submitType, setSubmitType] = useState<'create' | 'update' | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -112,6 +114,24 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleToggleLeave = () => {
+    const nextVal = !isLeave;
+    setIsLeave(nextVal);
+    if (nextVal) {
+      setIsAbsent(false);
+      setAbsenceReason('');
+    }
+  };
+
+  const handleToggleAbsent = () => {
+    const nextVal = !isAbsent;
+    setIsAbsent(nextVal);
+    if (nextVal) {
+      setIsLeave(false);
+      setLeaveDays('');
+    }
+  };
+
   const handleChangeHalaqa = () => {
     setSelectedHalaqaId(null);
     setStudentId('');
@@ -122,33 +142,62 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
     setIsAbsent(false);
     setAbsenceReason('');
     setHasReviewed(true);
+    setIsLeave(false);
+    setLeaveDays('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!studentId || isTimeRestricted || !selectedHalaqaId) return;
     if (isDuplicate && !editingReportId) return;
-    if (!isAbsent && (!surahs || !surahs.trim())) return;
-    if (!isAbsent && (pages === '' || pages === undefined)) return;
+    
+    if (isLeave) {
+      const days = Number(leaveDays);
+      if (isNaN(days) || days <= 0) return;
 
-    const reportData = {
-      studentId,
-      studentName: selectedStudent?.name || '',
-      halaqaId: selectedHalaqaId,
-      pagesReviewed: isAbsent ? 0 : Number(pages),
-      surahs: isAbsent ? 'غائبة' : surahs,
-      hasReviewed: isAbsent ? false : hasReviewed,
-      isAbsent,
-      absenceReason: isAbsent ? absenceReason : '',
-      isDeferred: false,
-    };
+      let currentDate = parseISO(currentEffectiveDate);
+      currentDate = ensureWorkingDay(currentDate);
 
-    if (editingReportId) {
-      onUpdate(editingReportId, reportData);
-      setSubmitType('update');
-    } else {
-      onSubmit(reportData);
+      for (let i = 0; i < days; i++) {
+        const dateStr = format(currentDate, 'yyyy-MM-dd');
+        const reportData = {
+          studentId,
+          studentName: selectedStudent?.name || '',
+          halaqaId: selectedHalaqaId,
+          pagesReviewed: 0,
+          surahs: `إجازة (يوم ${i + 1} من ${days})`,
+          hasReviewed: false,
+          isAbsent: true,
+          absenceReason: `إجازة (${days} أيام)`,
+          isDeferred: false,
+        };
+        await onSubmit(reportData, dateStr);
+        currentDate = getNextWorkingDay(currentDate);
+      }
       setSubmitType('create');
+    } else {
+      if (!isAbsent && (!surahs || !surahs.trim())) return;
+      if (!isAbsent && (pages === '' || pages === undefined)) return;
+
+      const reportData = {
+        studentId,
+        studentName: selectedStudent?.name || '',
+        halaqaId: selectedHalaqaId,
+        pagesReviewed: isAbsent ? 0 : Number(pages),
+        surahs: isAbsent ? 'غائبة' : surahs,
+        hasReviewed: isAbsent ? false : hasReviewed,
+        isAbsent,
+        absenceReason: isAbsent ? absenceReason : '',
+        isDeferred: false,
+      };
+
+      if (editingReportId) {
+        onUpdate(editingReportId, reportData);
+        setSubmitType('update');
+      } else {
+        await onSubmit(reportData);
+        setSubmitType('create');
+      }
     }
 
     setTimeout(() => {
@@ -160,6 +209,8 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
       setSurahs('');
       setIsAbsent(false);
       setAbsenceReason('');
+      setIsLeave(false);
+      setLeaveDays('');
     }, 3000);
   };
 
@@ -393,10 +444,31 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
                         <input
                           type="text"
                           required
-                          placeholder="مثال: إجازة، عذر طبي، سفر..."
+                          placeholder="مثال: عذر طبي، سفر، ظروف خاصة..."
                           value={absenceReason}
                           onChange={(e) => setAbsenceReason(e.target.value)}
                           className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-800 focus:ring-2 focus:ring-red-500 outline-none transition-all"
+                        />
+                      </div>
+                    </motion.div>
+                  ) : isLeave ? (
+                    <motion.div
+                      key="leave-fields"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="space-y-4 overflow-hidden"
+                    >
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-slate-700">عدد أيام الإجازة</label>
+                        <input
+                          type="number"
+                          min="1"
+                          required={isLeave}
+                          placeholder="أدخلي عدد الأيام (مثال: 5)..."
+                          value={leaveDays}
+                          onChange={(e) => setLeaveDays(e.target.value)}
+                          className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-800 focus:ring-2 focus:ring-amber-500 outline-none transition-all"
                         />
                       </div>
                     </motion.div>
@@ -414,7 +486,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
                           type="number"
                           min="0"
                           step="0.5"
-                          required={!isAbsent}
+                          required={!isAbsent && !isLeave}
                           value={pages}
                           onChange={(e) => setPages(e.target.value)}
                           className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
@@ -425,7 +497,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
                         <label className="text-sm font-semibold text-slate-700">السورة / السور التي تمت مراجعتها</label>
                         <input
                           type="text"
-                          required={!isAbsent}
+                          required={!isAbsent && !isLeave}
                           placeholder="مثال:د. نوح م.الجن الى الناس"
                           value={surahs}
                           onChange={(e) => setSurahs(e.target.value)}
@@ -455,20 +527,38 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
                   )}
                 </AnimatePresence>
 
-                <div
-                  onClick={() => setIsAbsent(!isAbsent)}
-                  className={cn(
-                    "w-full h-12 flex items-center gap-3 rounded-xl px-4 cursor-pointer transition-all border",
-                    isAbsent ? "bg-red-50 border-red-200 text-red-700" : "bg-slate-50 border-slate-200 text-slate-500"
-                  )}
-                >
-                  <div className={cn(
-                    "w-5 h-5 rounded-md border flex items-center justify-center transition-all",
-                    isAbsent ? "bg-red-600 border-red-600 text-white" : "border-slate-300"
-                  )}>
-                    {isAbsent && <Check className="w-3 h-3" />}
+                <div className="grid grid-cols-2 gap-4">
+                  <div
+                    onClick={handleToggleAbsent}
+                    className={cn(
+                      "h-12 flex items-center gap-3 rounded-xl px-4 cursor-pointer transition-all border",
+                      isAbsent ? "bg-red-50 border-red-200 text-red-700 font-bold" : "bg-slate-50 border-slate-200 text-slate-500 hover:border-red-300"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-5 h-5 rounded-md border flex items-center justify-center transition-all",
+                      isAbsent ? "bg-red-600 border-red-600 text-white" : "border-slate-300"
+                    )}>
+                      {isAbsent && <Check className="w-3 h-3" />}
+                    </div>
+                    <span className="text-xs sm:text-sm font-bold">غائبة اليوم</span>
                   </div>
-                  <span className="text-sm font-bold">الطالبة غائبة اليوم</span>
+
+                  <div
+                    onClick={handleToggleLeave}
+                    className={cn(
+                      "h-12 flex items-center gap-3 rounded-xl px-4 cursor-pointer transition-all border",
+                      isLeave ? "bg-amber-50 border-amber-200 text-amber-700 font-bold" : "bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-300"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-5 h-5 rounded-md border flex items-center justify-center transition-all",
+                      isLeave ? "bg-amber-600 border-amber-600 text-white" : "border-slate-300"
+                    )}>
+                      {isLeave && <Check className="w-3 h-3" />}
+                    </div>
+                    <span className="text-xs sm:text-sm font-bold">تسجيل إجازة</span>
+                  </div>
                 </div>
               </>
             )}
@@ -479,11 +569,25 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
                 disabled={!studentId || isTimeRestricted || (isDuplicate && !editingReportId)}
                 className={cn(
                   "w-full text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 group",
-                  (isDuplicate && !editingReportId) || isTimeRestricted ? "bg-slate-300 cursor-not-allowed shadow-none" : (isAbsent ? "bg-red-600 hover:bg-red-700 shadow-red-100" : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100")
+                  (isDuplicate && !editingReportId) || isTimeRestricted 
+                    ? "bg-slate-300 cursor-not-allowed shadow-none" 
+                    : isAbsent 
+                      ? "bg-red-600 hover:bg-red-700 shadow-red-100" 
+                      : isLeave
+                        ? "bg-amber-600 hover:bg-amber-700 shadow-amber-100"
+                        : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100"
                 )}
               >
                 <span>
-                  {editingReportId ? 'حفظ التعديلات' : (isDuplicate ? 'تم التسجيل مسبقاً' : (isAbsent ? 'تسجيل الغياب' : 'إرسال وتحديث الجدول'))}
+                  {editingReportId 
+                    ? 'حفظ التعديلات' 
+                    : isDuplicate 
+                      ? 'تم التسجيل مسبقاً' 
+                      : isAbsent 
+                        ? 'تسجيل الغياب' 
+                        : isLeave
+                          ? 'تسجيل الإجازة'
+                          : 'إرسال وتحديث الجدول'}
                 </span>
                 {!isDuplicate && !isTimeRestricted && <Send className="w-4 h-4 group-hover:translate-x-[-4px] transition-transform" />}
               </button>
@@ -494,9 +598,12 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
                   onClick={() => {
                     setEditingReportId(null);
                     setStudentId('');
-                    setPages(0);
+                    setPages('');
                     setSurahs('');
                     setIsAbsent(false);
+                    setAbsenceReason('');
+                    setIsLeave(false);
+                    setLeaveDays('');
                   }}
                   className="w-full mt-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded-xl transition-all text-sm"
                 >
