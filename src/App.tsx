@@ -215,6 +215,15 @@ export default function App() {
     }
   };
 
+  const handlePermanentDeleteReport = async (id: string) => {
+    if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
+    try {
+      await deleteDoc(doc(db, 'reports', id));
+    } catch (error) {
+      console.error("Error permanently deleting report: ", error);
+    }
+  };
+
   const handleToggleDeferred = async (id: string) => {
     if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
     const report = reports.find(r => r.id === id);
@@ -492,6 +501,7 @@ export default function App() {
                     onResequenceReports={handleResequenceReports}
                     onClearAll={handleClearToday}
                     onRestoreReport={handleRestoreReport}
+                    onPermanentDeleteReport={handlePermanentDeleteReport}
                   />
                   
                   <div className="max-w-4xl mx-auto px-4 sm:px-8">

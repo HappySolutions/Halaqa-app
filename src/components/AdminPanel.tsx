@@ -16,6 +16,7 @@ interface AdminPanelProps {
   onResequenceReports: (halaqaId: string) => void;
   onClearAll: (halaqaId: string) => void;
   onRestoreReport: (id: string) => void;
+  onPermanentDeleteReport: (id: string) => void;
 }
 
 export function AdminPanel({
@@ -27,7 +28,8 @@ export function AdminPanel({
   onUpdateReport,
   onResequenceReports,
   onClearAll,
-  onRestoreReport
+  onRestoreReport,
+  onPermanentDeleteReport
 }: AdminPanelProps) {
   const [selectedHalaqaId, setSelectedHalaqaId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -433,13 +435,26 @@ export function AdminPanel({
                         {report.isAbsent ? 'غائبة' : `${report.pagesReviewed} وجه - ${report.surahs || 'مراجعة'}`}
                       </span>
                     </div>
-                    <button
-                      onClick={() => onToggleDeferred(report.id)}
-                      className="text-[10px] bg-white hover:bg-amber-600 hover:text-white border border-amber-200 text-amber-700 px-2.5 py-1 rounded-lg transition-all font-bold shadow-sm"
-                      title="إلغاء التحويل وإعادة الطالبة لليوم"
-                    >
-                      إلغاء التحويل
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => onToggleDeferred(report.id)}
+                        className="text-[10px] bg-white hover:bg-amber-600 hover:text-white border border-amber-200 text-amber-700 px-2.5 py-1 rounded-lg transition-all font-bold shadow-sm"
+                        title="إلغاء التحويل وإعادة الطالبة لليوم"
+                      >
+                        إلغاء التحويل
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`هل تريدين حذف بطاقة «${report.studentName}» من القائمة؟\n\nيمكنكِ استعادتها لاحقاً من سلة المهملات.`)) {
+                            onDeleteReport(report.id);
+                          }
+                        }}
+                        className="text-[10px] bg-white hover:bg-red-600 hover:text-white border border-red-200 text-red-600 px-2.5 py-1 rounded-lg transition-all font-bold shadow-sm"
+                        title="حذف من القائمة"
+                      >
+                        حذف
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -461,14 +476,27 @@ export function AdminPanel({
                         {report.isAbsent ? 'غائبة' : `${report.pagesReviewed} وجه`}
                       </span>
                     </div>
-                    <button
-                      onClick={() => onRestoreReport(report.id)}
-                      className="text-[10px] bg-white border border-red-200 text-red-600 hover:bg-red-600 hover:text-white px-2 py-1 rounded transition-all flex items-center gap-1 font-bold"
-                      title="استعادة السجل"
-                    >
-                      <RefreshCcw className="w-3 h-3" />
-                      استعادة
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => onRestoreReport(report.id)}
+                        className="text-[10px] bg-white border border-red-200 text-red-600 hover:bg-emerald-600 hover:border-emerald-600 hover:text-white px-2 py-1 rounded transition-all flex items-center gap-1 font-bold"
+                        title="استعادة السجل"
+                      >
+                        <RefreshCcw className="w-3 h-3" />
+                        استعادة
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`⚠️ تحذير: سيتم حذف بطاقة «${report.studentName}» بشكل نهائي ولن تتمكني من استعادتها!\n\nهل أنتِ متأكدة؟`)) {
+                            onPermanentDeleteReport(report.id);
+                          }
+                        }}
+                        className="text-[10px] bg-white border border-red-200 text-red-600 hover:bg-red-600 hover:text-white px-2 py-1 rounded transition-all flex items-center gap-1 font-bold"
+                        title="حذف نهائي من قاعدة البيانات"
+                      >
+                        حذف نهائي
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
