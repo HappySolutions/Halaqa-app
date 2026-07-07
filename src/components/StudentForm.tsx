@@ -19,7 +19,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
   const [editingReportId, setEditingReportId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [pages, setPages] = useState<number>(0);
+  const [pages, setPages] = useState<number | string>('');
   const [surahs, setSurahs] = useState('');
   const [hasReviewed, setHasReviewed] = useState(true);
   const [isAbsent, setIsAbsent] = useState(false);
@@ -117,7 +117,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
     setStudentId('');
     setEditingReportId(null);
     setSearchTerm('');
-    setPages(0);
+    setPages('');
     setSurahs('');
     setIsAbsent(false);
     setAbsenceReason('');
@@ -128,13 +128,14 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
     e.preventDefault();
     if (!studentId || isTimeRestricted || !selectedHalaqaId) return;
     if (isDuplicate && !editingReportId) return;
-    if (!isAbsent && !surahs) return;
+    if (!isAbsent && (!surahs || !surahs.trim())) return;
+    if (!isAbsent && (pages === '' || pages === undefined)) return;
 
     const reportData = {
       studentId,
       studentName: selectedStudent?.name || '',
       halaqaId: selectedHalaqaId,
-      pagesReviewed: isAbsent ? 0 : pages,
+      pagesReviewed: isAbsent ? 0 : Number(pages),
       surahs: isAbsent ? 'غائبة' : surahs,
       hasReviewed: isAbsent ? false : hasReviewed,
       isAbsent,
@@ -155,7 +156,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
       setStudentId('');
       setEditingReportId(null);
       setSearchTerm('');
-      setPages(0);
+      setPages('');
       setSurahs('');
       setIsAbsent(false);
       setAbsenceReason('');
@@ -415,7 +416,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
                           step="0.5"
                           required={!isAbsent}
                           value={pages}
-                          onChange={(e) => setPages(parseFloat(e.target.value))}
+                          onChange={(e) => setPages(e.target.value)}
                           className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                         />
                       </div>
