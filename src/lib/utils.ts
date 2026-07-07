@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 import { format, addDays, getDay, parseISO } from 'date-fns';
-import { Halaqa } from '../types';
+import { Halaqa, Report } from '../types';
 
 export const getNextWorkingDay = (currentDate: Date) => {
   let next = addDays(currentDate, 1);
@@ -47,4 +47,8 @@ export const getEffectiveDateForHalaqa = (halaqa?: Halaqa) => {
 
   return effectiveDate;
 };
+
+/** Sort key for reports: uses turnOrder if set, otherwise falls back to timestamp. */
+export const reportSortKey = (r: Report): number =>
+  r.turnOrder !== undefined ? r.turnOrder : (1e15 + r.timestamp);
 

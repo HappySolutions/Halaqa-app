@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Check, Send, User, Search, ChevronDown, X, AlertCircle, Users, LayoutGrid } from 'lucide-react';
 import { Student, Report, Halaqa } from '@/types';
-import { cn, getEffectiveDateForHalaqa } from '@/lib/utils';
+import { cn, getEffectiveDateForHalaqa, reportSortKey } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 
@@ -525,9 +525,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
               .filter(r => r.date === currentEffectiveDate && r.halaqaId === selectedHalaqaId && !r.isDeleted)
               .sort((a, b) => {
                 if (a.isAbsent !== b.isAbsent) return a.isAbsent ? 1 : -1;
-                const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
-                const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
-                return valA - valB;
+                return reportSortKey(a) - reportSortKey(b);
               })
               .map((r, index) => (
                 <motion.div

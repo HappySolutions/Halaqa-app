@@ -10,7 +10,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { StudentManager } from './components/StudentManager';
 import { Report, Student, Halaqa, UpdateReportData } from './types';
 import { format, parseISO } from 'date-fns';
-import { getEffectiveDateForHalaqa, getNextWorkingDay } from './lib/utils';
+import { getEffectiveDateForHalaqa, getNextWorkingDay, reportSortKey } from './lib/utils';
 import { Settings, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
@@ -155,9 +155,7 @@ export default function App() {
           // Present (isAbsent=false) should come before Absent (isAbsent=true)
           if (a.isAbsent !== b.isAbsent) return a.isAbsent ? 1 : -1;
           
-          const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
-          const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
-          return valA - valB;
+          return reportSortKey(a) - reportSortKey(b);
         }
         return b.timestamp - a.timestamp;
       });
@@ -284,15 +282,11 @@ export default function App() {
     const todayReports = reports.filter(r => r.date === effectiveDate && r.halaqaId === halaqaId && !r.isDeleted);
     
     const present = todayReports.filter(r => !r.isAbsent).sort((a, b) => {
-      const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
-      const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
-      return valA - valB;
+      return reportSortKey(a) - reportSortKey(b);
     });
     
     const absent = todayReports.filter(r => r.isAbsent).sort((a, b) => {
-      const valA = a.turnOrder !== undefined ? a.turnOrder : (1e15 + a.timestamp);
-      const valB = b.turnOrder !== undefined ? b.turnOrder : (1e15 + b.timestamp);
-      return valA - valB;
+      return reportSortKey(a) - reportSortKey(b);
     });
 
     try {
