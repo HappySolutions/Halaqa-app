@@ -15,12 +15,12 @@ import { Settings, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
 import { db } from './lib/firebase';
-import { 
-  collection, 
-  onSnapshot, 
-  addDoc, 
-  deleteDoc, 
-  doc, 
+import {
+  collection,
+  onSnapshot,
+  addDoc,
+  deleteDoc,
+  doc,
   updateDoc,
   query,
   serverTimestamp,
@@ -39,7 +39,7 @@ export default function App() {
   });
   const [adminPassword, setAdminPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
-  
+
   // Data State
   const [halaqat, setHalaqat] = useState<Halaqa[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -154,7 +154,7 @@ export default function App() {
         if (a.date === b.date) {
           // Present (isAbsent=false) should come before Absent (isAbsent=true)
           if (a.isAbsent !== b.isAbsent) return a.isAbsent ? 1 : -1;
-          
+
           return reportSortKey(a) - reportSortKey(b);
         }
         return b.timestamp - a.timestamp;
@@ -182,7 +182,7 @@ export default function App() {
 
       const todayReports = reports.filter(r => r.date === effectiveDate && r.halaqaId === reportData.halaqaId && !r.isDeleted);
       const maxTurn = todayReports.length > 0 ? Math.max(...todayReports.map(r => r.turnOrder ?? 0)) : 0;
-      
+
       await addDoc(collection(db, 'reports'), {
         ...reportData,
         timestamp: serverTimestamp(),
@@ -272,7 +272,7 @@ export default function App() {
     const currentHalaqa = halaqat.find(h => h.id === halaqaId);
     const effectiveDate = getEffectiveDateForHalaqa(currentHalaqa);
     const todayReports = reports.filter(r => r.date === effectiveDate && r.halaqaId === halaqaId);
-    
+
     // Soft delete all reports for this halaqa on the current effective date
     for (const report of todayReports) {
       try {
@@ -285,15 +285,15 @@ export default function App() {
 
   const handleResequenceReports = async (halaqaId: string) => {
     if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
-    
+
     const currentHalaqa = halaqat.find(h => h.id === halaqaId);
     const effectiveDate = getEffectiveDateForHalaqa(currentHalaqa);
     const todayReports = reports.filter(r => r.date === effectiveDate && r.halaqaId === halaqaId && !r.isDeleted);
-    
+
     const present = todayReports.filter(r => !r.isAbsent).sort((a, b) => {
       return reportSortKey(a) - reportSortKey(b);
     });
-    
+
     const absent = todayReports.filter(r => r.isAbsent).sort((a, b) => {
       return reportSortKey(a) - reportSortKey(b);
     });
@@ -305,7 +305,7 @@ export default function App() {
           await updateDoc(doc(db, 'reports', present[i].id), { turnOrder: i + 1 });
         }
       }
-      
+
       // Update absent sequence
       for (let i = 0; i < absent.length; i++) {
         if (absent[i].turnOrder !== i + 1) {
@@ -320,7 +320,7 @@ export default function App() {
   const handleAddHalaqa = async (name: string) => {
     if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
     try {
-      await addDoc(collection(db, 'halaqat'), { 
+      await addDoc(collection(db, 'halaqat'), {
         name,
         timestamp: serverTimestamp()
       });
@@ -356,7 +356,7 @@ export default function App() {
       // Get the highest order for this specific halaqa
       const halaqaStudents = students.filter(s => s.halaqaId === halaqaId);
       const maxOrder = halaqaStudents.length > 0 ? Math.max(...halaqaStudents.map(s => s.order || 0)) : -1;
-      await addDoc(collection(db, 'students'), { 
+      await addDoc(collection(db, 'students'), {
         name,
         halaqaId,
         order: maxOrder + 1
@@ -368,14 +368,14 @@ export default function App() {
 
   const handleBulkAddStudents = async (halaqaId: string, names: string[]) => {
     if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
-    
+
     try {
       // Get current max order to append
       const halaqaStudents = students.filter(s => s.halaqaId === halaqaId);
       const startOrder = halaqaStudents.length > 0 ? Math.max(...halaqaStudents.map(s => s.order || 0)) + 1 : 0;
 
       for (let i = 0; i < names.length; i++) {
-        await addDoc(collection(db, 'students'), { 
+        await addDoc(collection(db, 'students'), {
           name: names[i].trim(),
           halaqaId,
           order: startOrder + i
@@ -416,7 +416,7 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 selection:bg-emerald-600 selection:text-white">
       <Header view={view} setView={setView} />
-      
+
       <main className="flex-grow py-8 px-4">
         <AnimatePresence mode="wait">
           {view === 'student' ? (
@@ -426,11 +426,11 @@ export default function App() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
             >
-              <StudentForm 
-                students={students} 
-                reports={reports} 
+              <StudentForm
+                students={students}
+                reports={reports}
                 halaqat={halaqat}
-                onSubmit={handleAddReport} 
+                onSubmit={handleAddReport}
                 onUpdate={handleUpdateReport}
               />
             </motion.div>
@@ -444,7 +444,7 @@ export default function App() {
             >
               {!adminRole ? (
                 <div className="max-w-md mx-auto pt-12">
-                  <motion.form 
+                  <motion.form
                     onSubmit={handleAdminLogin}
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
@@ -458,9 +458,9 @@ export default function App() {
                       <p className="text-sm text-slate-500 mt-1">يرجى إدخال كلمة المرور للمتابعة</p>
                     </div>
                     <div className="space-y-2">
-                      <input 
+                      <input
                         autoFocus
-                        type="password" 
+                        type="password"
                         value={adminPassword}
                         onChange={(e) => setAdminPassword(e.target.value)}
                         placeholder="كلمة المرور..."
@@ -473,7 +473,7 @@ export default function App() {
                         <p className="text-xs text-red-500 font-bold">كلمة المرور غير صحيحة!</p>
                       )}
                     </div>
-                    <button 
+                    <button
                       type="submit"
                       className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl transition-all shadow-lg"
                     >
@@ -484,17 +484,18 @@ export default function App() {
               ) : (
                 <>
                   <div className="max-w-6xl mx-auto flex justify-end px-4 sm:px-8">
-                    <button 
+                    <button
                       onClick={handleAdminLogout}
                       className="text-[10px] font-bold text-red-400 hover:text-red-600 transition-all uppercase tracking-widest"
                     >
                       تسجيل خروج المشرفة
                     </button>
                   </div>
-                  <AdminPanel 
-                    reports={reports} 
-                    students={students} 
+                  <AdminPanel
+                    reports={reports}
+                    students={students}
                     halaqat={adminRole === 'teacher' && adminHalaqaId ? halaqat.filter(h => h.id === adminHalaqaId) : halaqat}
+                    onAddReport={handleAddReport}
                     onDeleteReport={handleDeleteReport}
                     onToggleDeferred={handleToggleDeferred}
                     onUpdateReport={handleUpdateReport}
@@ -503,7 +504,7 @@ export default function App() {
                     onRestoreReport={handleRestoreReport}
                     onPermanentDeleteReport={handlePermanentDeleteReport}
                   />
-                  
+
                   <div className="max-w-4xl mx-auto px-4 sm:px-8">
                     <button
                       onClick={() => setShowSettings(!showSettings)}
@@ -512,25 +513,25 @@ export default function App() {
                       <Settings className={cn("w-4 h-4", showSettings ? "rotate-90 transition-transform" : "")} />
                       <span>{showSettings ? 'إخفاء إدارة الحلقات والأسماء' : 'إدارة الحلقات والأسماء'}</span>
                     </button>
-                    
+
                     {showSettings && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         className="mt-6 overflow-hidden"
                       >
-                         <StudentManager 
-                           students={students} 
-                           halaqat={adminRole === 'teacher' && adminHalaqaId ? halaqat.filter(h => h.id === adminHalaqaId) : halaqat}
-                           adminRole={adminRole}
-                           onAddHalaqa={handleAddHalaqa}
-                           onUpdateHalaqa={handleUpdateHalaqa}
-                           onDeleteHalaqa={handleDeleteHalaqa}
-                           onAdd={handleAddStudent} 
-                           onUpdateStudent={handleUpdateStudent}
-                           onRemoveStudent={handleRemoveStudent}
-                           onBulkAdd={handleBulkAddStudents}
-                         />
+                        <StudentManager
+                          students={students}
+                          halaqat={adminRole === 'teacher' && adminHalaqaId ? halaqat.filter(h => h.id === adminHalaqaId) : halaqat}
+                          adminRole={adminRole}
+                          onAddHalaqa={handleAddHalaqa}
+                          onUpdateHalaqa={handleUpdateHalaqa}
+                          onDeleteHalaqa={handleDeleteHalaqa}
+                          onAdd={handleAddStudent}
+                          onUpdateStudent={handleUpdateStudent}
+                          onRemoveStudent={handleRemoveStudent}
+                          onBulkAdd={handleBulkAddStudents}
+                        />
                       </motion.div>
                     )}
                   </div>

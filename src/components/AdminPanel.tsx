@@ -1,15 +1,18 @@
 import React, { useMemo, useState } from 'react';
-import { Clipboard, Trash2, Users, Check, RefreshCcw, LayoutGrid, AlertTriangle } from 'lucide-react';
+import { Clipboard, Trash2, Users, Check, RefreshCcw, AlertTriangle, UserPlus, X } from 'lucide-react';
 import { Report, Student, Halaqa } from '@/types';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { cn, getEffectiveDateForHalaqa, reportSortKey } from '@/lib/utils';
+import { cn, getEffectiveDateForHalaqa, reportSortKey, getNextWorkingDay, ensureWorkingDay } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+
+type QuickRegisterType = 'present' | 'absent' | 'leave';
 
 interface AdminPanelProps {
   reports: Report[];
   students: Student[];
   halaqat: Halaqa[];
+  onAddReport: (report: Omit<Report, 'id' | 'timestamp' | 'date' | 'isDeferred'>, customDate?: string) => Promise<void> | void;
   onDeleteReport: (id: string) => void;
   onToggleDeferred: (id: string) => void;
   onUpdateReport: (id: string, data: any) => void;
@@ -23,6 +26,7 @@ export function AdminPanel({
   reports,
   students,
   halaqat,
+  onAddReport,
   onDeleteReport,
   onToggleDeferred,
   onUpdateReport,
@@ -42,6 +46,14 @@ export function AdminPanel({
     absenceReason: '',
     turnOrder: 0
   });
+  const [quickRegisterStudent, setQuickRegisterStudent] = useState<Student | null>(null);
+  const [quickRegisterType, setQuickRegisterType] = useState<QuickRegisterType>('present');
+  const [quickPages, setQuickPages] = useState<number | string>('');
+  const [quickSurahs, setQuickSurahs] = useState('');
+  const [quickHasReviewed, setQuickHasReviewed] = useState(true);
+  const [quickAbsenceReason, setQuickAbsenceReason] = useState('');
+  const [quickLeaveDays, setQuickLeaveDays] = useState<number | string>('');
+  const [isQuickSubmitting, setIsQuickSubmitting] = useState(false);
 
   // Set default selected halaqa
   React.useEffect(() => {
@@ -123,6 +135,98 @@ export function AdminPanel({
       isDeferred: false
     });
     setEditingId(null);
+  };
+
+  const resetQuickRegisterForm = () => {
+    setQuickRegisterStudent(null);
+    setQuickRegisterType('present');
+    setQuickPages('');
+    setQuickSurahs('');
+    setQuickHasReviewed(true);
+    setQuickAbsenceReason('');
+    setQuickLeaveDays('');
+    setIsQuickSubmitting(false);
+  };
+
+  const openQuickRegister = (student: Student) => {
+    setQuickRegisterStudent(student);
+    setQuickRegisterType('present');
+    setQuickPages('');
+    setQuickSurahs('');
+    setQuickHasReviewed(true);
+    setQuickAbsenceReason('');
+    setQuickLeaveDays('');
+  };
+
+  const handleQuickRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickRegisterStudent || !selectedHalaqaId || isQuickSubmitting) return;
+
+    const currentHalaqa = halaqat.find(h => h.id === selectedHalaqaId);
+    const effectiveDate = getEffectiveDateForHalaqa(currentHalaqa);
+
+    setIsQuickSubmitting(true);
+
+    try {
+      if (quickRegisterType === 'leave') {
+        const days = Number(quickLeaveDays);
+        if (isNaN(days) || days <= 0) {
+          setIsQuickSubmitting(false);
+          return;
+        }
+
+        let currentDate = parseISO(effectiveDate);
+        currentDate = ensureWorkingDay(currentDate);
+
+        for (let i = 0; i < days; i++) {
+          const dateStr = format(currentDate, 'yyyy-MM-dd');
+          await onAddReport({
+            studentId: quickRegisterStudent.id,
+            studentName: quickRegisterStudent.name,
+            halaqaId: selectedHalaqaId,
+            pagesReviewed: 0,
+            surahs: `إجازة (يوم ${i + 1} من ${days})`,
+            hasReviewed: false,
+            isAbsent: true,
+            absenceReason: `إجازة (${days} أيام)`,
+          }, dateStr);
+          currentDate = getNextWorkingDay(currentDate);
+        }
+      } else if (quickRegisterType === 'absent') {
+        if (!quickAbsenceReason.trim()) {
+          setIsQuickSubmitting(false);
+          return;
+        }
+        await onAddReport({
+          studentId: quickRegisterStudent.id,
+          studentName: quickRegisterStudent.name,
+          halaqaId: selectedHalaqaId,
+          pagesReviewed: 0,
+          surahs: 'غائبة',
+          hasReviewed: false,
+          isAbsent: true,
+          absenceReason: quickAbsenceReason.trim(),
+        });
+      } else {
+        if (!quickSurahs.trim() || quickPages === '' || quickPages === undefined) {
+          setIsQuickSubmitting(false);
+          return;
+        }
+        await onAddReport({
+          studentId: quickRegisterStudent.id,
+          studentName: quickRegisterStudent.name,
+          halaqaId: selectedHalaqaId,
+          pagesReviewed: Number(quickPages),
+          surahs: quickSurahs.trim(),
+          hasReviewed: quickHasReviewed,
+          isAbsent: false,
+          absenceReason: '',
+        });
+      }
+      resetQuickRegisterForm();
+    } catch {
+      setIsQuickSubmitting(false);
+    }
   };
 
   const generateWhatsAppText = () => {
@@ -403,18 +507,24 @@ export function AdminPanel({
 
           {remainingStudents.length > 0 && (
             <div className="mt-8 border-t border-slate-200 pt-6">
-              <h4 className="text-sm font-bold text-slate-500 mb-4 flex items-center gap-2">
+              <h4 className="text-sm font-bold text-slate-500 mb-2 flex items-center gap-2">
                 <span className="text-base">⏳</span>
                 الطالبات المتبقيات اللاتي لم يسجلن اليوم ({remainingStudents.length})
               </h4>
+              <p className="text-[11px] text-slate-400 mb-4">
+                اضغطي على اسم الطالبة لتسجيلها نيابةً عنها (حتى بعد إغلاق التسجيل)
+              </p>
               <div className="flex flex-wrap gap-2 max-h-[150px] overflow-y-auto pr-2 custom-scrollbar" dir="rtl">
                 {remainingStudents.map(student => (
-                  <span
+                  <button
                     key={student.id}
-                    className="inline-flex items-center px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-50 border border-slate-200 text-slate-600 transition-colors hover:bg-slate-100/80 cursor-default"
+                    type="button"
+                    onClick={() => openQuickRegister(student)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-50 border border-slate-200 text-slate-600 transition-colors hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 cursor-pointer"
                   >
+                    <UserPlus className="w-3 h-3" />
                     {student.name}
-                  </span>
+                  </button>
                 ))}
               </div>
             </div>
@@ -546,6 +656,190 @@ export function AdminPanel({
           <Clipboard className="w-4 h-4 group-hover:scale-110 transition-transform" />
         </button>
       </div>
+
+      {/* Quick Register Modal */}
+      <AnimatePresence>
+        {quickRegisterStudent && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={resetQuickRegisterForm}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+
+            <motion.form
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              onSubmit={handleQuickRegisterSubmit}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-emerald-100 overflow-hidden z-10 text-right p-6 sm:p-8 space-y-5"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                    <UserPlus className="w-5 h-5 text-emerald-600" />
+                    تسجيل طالبة
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    تسجيل نيابةً عن الطالبة — بدون قيود وقت التسجيل
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={resetQuickRegisterForm}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
+                <div className="text-[10px] text-emerald-600 font-bold mb-1">اسم الطالبة</div>
+                <div className="font-bold text-slate-800">{quickRegisterStudent.name}</div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { type: 'present' as const, label: 'حاضرة', active: 'bg-emerald-600 border-emerald-600 text-white' },
+                  { type: 'absent' as const, label: 'غائبة', active: 'bg-red-600 border-red-600 text-white' },
+                  { type: 'leave' as const, label: 'إجازة', active: 'bg-amber-600 border-amber-600 text-white' },
+                ]).map(({ type, label, active }) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setQuickRegisterType(type)}
+                    className={cn(
+                      "py-2 rounded-xl text-xs font-bold border transition-all",
+                      quickRegisterType === type
+                        ? active
+                        : "bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300"
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <AnimatePresence mode="wait">
+                {quickRegisterType === 'present' && (
+                  <motion.div
+                    key="present"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-3 overflow-hidden"
+                  >
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-600">عدد أوجه المراجعة</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        required
+                        value={quickPages}
+                        onChange={(e) => setQuickPages(e.target.value)}
+                        className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-600">السور المراجعة</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="مثال: د. نوح م. الجن إلى الناس"
+                        value={quickSurahs}
+                        onChange={(e) => setQuickSurahs(e.target.value)}
+                        className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"
+                      />
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2">
+                      <input
+                        type="checkbox"
+                        checked={quickHasReviewed}
+                        onChange={(e) => setQuickHasReviewed(e.target.checked)}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-xs font-bold text-emerald-700">تمت المراجعة</span>
+                    </label>
+                  </motion.div>
+                )}
+
+                {quickRegisterType === 'absent' && (
+                  <motion.div
+                    key="absent"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-600">سبب الغياب</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="مثال: عذر طبي، سفر..."
+                        value={quickAbsenceReason}
+                        onChange={(e) => setQuickAbsenceReason(e.target.value)}
+                        className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/10"
+                      />
+                    </div>
+                  </motion.div>
+                )}
+
+                {quickRegisterType === 'leave' && (
+                  <motion.div
+                    key="leave"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-600">عدد أيام الإجازة</label>
+                      <input
+                        type="number"
+                        min="1"
+                        required
+                        placeholder="مثال: 5"
+                        value={quickLeaveDays}
+                        onChange={(e) => setQuickLeaveDays(e.target.value)}
+                        className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10"
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={isQuickSubmitting}
+                  className={cn(
+                    "flex-1 text-white font-bold py-3 rounded-xl transition-all text-sm shadow-lg disabled:opacity-50",
+                    quickRegisterType === 'present'
+                      ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100"
+                      : quickRegisterType === 'absent'
+                        ? "bg-red-600 hover:bg-red-700 shadow-red-100"
+                        : "bg-amber-600 hover:bg-amber-700 shadow-amber-100"
+                  )}
+                >
+                  {isQuickSubmitting ? 'جاري التسجيل...' : 'تسجيل الطالبة'}
+                </button>
+                <button
+                  type="button"
+                  onClick={resetQuickRegisterForm}
+                  className="px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-all text-sm"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </motion.form>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Custom Confirmation Modal */}
       <AnimatePresence>
