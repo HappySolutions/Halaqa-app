@@ -353,7 +353,7 @@ export function AdminPanel({
             <div className="flex items-center gap-1">
               <button
                 onClick={() => {
-                  if (selectedHalaqaId && confirm('سيتم إعادة ترتيب جميع الطالبات لتسهيل التعديل. هل أنتِ متأكدة؟')) onResequenceReports(selectedHalaqaId);
+                  if (selectedHalaqaId) onResequenceReports(selectedHalaqaId);
                 }}
                 className="p-2 text-slate-300 hover:text-emerald-500 transition-all"
                 title="إعادة تسلسل الأرقام"
@@ -484,10 +484,8 @@ export function AdminPanel({
                     </button>
                     <button
                       onClick={() => {
-                        if (confirm(`هل تريدين حذف بطاقة «${report.studentName}» من قائمة اليوم؟\n\nيمكنكِ استعادتها لاحقاً من سلة المهملات.`)) {
-                          if (editingId === report.id) setEditingId(null);
-                          onDeleteReport(report.id);
-                        }
+                        if (editingId === report.id) setEditingId(null);
+                        onDeleteReport(report.id);
                       }}
                       className="p-1.5 text-slate-400 hover:text-red-500 transition-all"
                       title="حذف من القائمة"
@@ -554,11 +552,7 @@ export function AdminPanel({
                         إلغاء التحويل
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm(`هل تريدين حذف بطاقة «${report.studentName}» من القائمة؟\n\nيمكنكِ استعادتها لاحقاً من سلة المهملات.`)) {
-                            onDeleteReport(report.id);
-                          }
-                        }}
+                        onClick={() => onDeleteReport(report.id)}
                         className="text-[10px] bg-white hover:bg-red-600 hover:text-white border border-red-200 text-red-600 px-2.5 py-1 rounded-lg transition-all font-bold shadow-sm"
                         title="حذف من القائمة"
                       >
@@ -596,11 +590,7 @@ export function AdminPanel({
                         استعادة
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm(`⚠️ تحذير: سيتم حذف بطاقة «${report.studentName}» بشكل نهائي ولن تتمكني من استعادتها!\n\nهل أنتِ متأكدة؟`)) {
-                            onPermanentDeleteReport(report.id);
-                          }
-                        }}
+                        onClick={() => onPermanentDeleteReport(report.id)}
                         className="text-[10px] bg-white border border-red-200 text-red-600 hover:bg-red-600 hover:text-white px-2 py-1 rounded transition-all flex items-center gap-1 font-bold"
                         title="حذف نهائي من قاعدة البيانات"
                       >

@@ -339,11 +339,7 @@ export function StudentManager({
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={() => {
-                            if (confirm(`هل أنتِ متأكدة من حذف الطالبة «${student.name}» من الحلقة؟`)) {
-                              onRemoveStudent(student.id);
-                            }
-                          }}
+                          onClick={() => onRemoveStudent(student.id)}
                           className="p-1 text-slate-400 hover:text-red-500 transition-all"
                           title="حذف الاسم"
                         >
