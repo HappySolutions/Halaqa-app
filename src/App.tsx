@@ -173,12 +173,12 @@ export default function App() {
     };
   }, []);
 
-  const handleAddReport = async (reportData: Omit<Report, 'id' | 'timestamp' | 'date' | 'isDeferred'>) => {
+  const handleAddReport = async (reportData: Omit<Report, 'id' | 'timestamp' | 'date' | 'isDeferred'>, customDate?: string) => {
     if (!import.meta.env.VITE_FIREBASE_PROJECT_ID) return;
 
     try {
       const currentHalaqa = halaqat.find(h => h.id === reportData.halaqaId);
-      const effectiveDate = getEffectiveDateForHalaqa(currentHalaqa);
+      const effectiveDate = customDate || getEffectiveDateForHalaqa(currentHalaqa);
 
       const todayReports = reports.filter(r => r.date === effectiveDate && r.halaqaId === reportData.halaqaId && !r.isDeleted);
       const maxTurn = todayReports.length > 0 ? Math.max(...todayReports.map(r => r.turnOrder ?? 0)) : 0;

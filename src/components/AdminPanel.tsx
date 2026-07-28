@@ -171,6 +171,7 @@ export function AdminPanel({
       if (quickRegisterType === 'leave') {
         const days = Number(quickLeaveDays);
         if (isNaN(days) || days <= 0) {
+          alert('يرجى إدخال عدد أيام الإجازة بشكل صحيح (رقم أكبر من صفر)');
           setIsQuickSubmitting(false);
           return;
         }
@@ -194,6 +195,7 @@ export function AdminPanel({
         }
       } else if (quickRegisterType === 'absent') {
         if (!quickAbsenceReason.trim()) {
+          alert('يرجى إدخال سبب الغياب');
           setIsQuickSubmitting(false);
           return;
         }
@@ -209,6 +211,7 @@ export function AdminPanel({
         });
       } else {
         if (!quickSurahs.trim() || quickPages === '' || quickPages === undefined) {
+          alert('يرجى إدخال عدد الأوجه والسور المراجعة بشكل صحيح');
           setIsQuickSubmitting(false);
           return;
         }
@@ -226,6 +229,7 @@ export function AdminPanel({
       resetQuickRegisterForm();
     } catch {
       setIsQuickSubmitting(false);
+      alert('حدث خطأ أثناء التسجيل، يرجى المحاولة مرة أخرى.');
     }
   };
 
@@ -728,7 +732,6 @@ export function AdminPanel({
                         type="number"
                         min="0"
                         step="0.5"
-                        required
                         value={quickPages}
                         onChange={(e) => setQuickPages(e.target.value)}
                         className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"
@@ -738,7 +741,6 @@ export function AdminPanel({
                       <label className="text-xs font-bold text-slate-600">السور المراجعة</label>
                       <input
                         type="text"
-                        required
                         placeholder="مثال: د. نوح م. الجن إلى الناس"
                         value={quickSurahs}
                         onChange={(e) => setQuickSurahs(e.target.value)}
@@ -769,7 +771,6 @@ export function AdminPanel({
                       <label className="text-xs font-bold text-slate-600">سبب الغياب</label>
                       <input
                         type="text"
-                        required
                         placeholder="مثال: عذر طبي، سفر..."
                         value={quickAbsenceReason}
                         onChange={(e) => setQuickAbsenceReason(e.target.value)}
@@ -792,7 +793,6 @@ export function AdminPanel({
                       <input
                         type="number"
                         min="1"
-                        required
                         placeholder="مثال: 5"
                         value={quickLeaveDays}
                         onChange={(e) => setQuickLeaveDays(e.target.value)}
