@@ -495,6 +495,7 @@ export default function App() {
                     reports={reports} 
                     students={students} 
                     halaqat={adminRole === 'teacher' && adminHalaqaId ? halaqat.filter(h => h.id === adminHalaqaId) : halaqat}
+                    onAddReport={handleAddReport}
                     onDeleteReport={handleDeleteReport}
                     onToggleDeferred={handleToggleDeferred}
                     onUpdateReport={handleUpdateReport}
