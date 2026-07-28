@@ -183,16 +183,21 @@ export default function App() {
       const todayReports = reports.filter(r => r.date === effectiveDate && r.halaqaId === reportData.halaqaId && !r.isDeleted);
       const maxTurn = todayReports.length > 0 ? Math.max(...todayReports.map(r => r.turnOrder ?? 0)) : 0;
       
-      await addDoc(collection(db, 'reports'), {
+      // We deliberately do not await addDoc here to allow the UI to proceed immediately.
+      // Firestore will instantly fire the snapshot listener for optimistic updates.
+      addDoc(collection(db, 'reports'), {
         ...reportData,
         timestamp: serverTimestamp(),
         date: effectiveDate,
         isDeferred: false,
         turnOrder: maxTurn + 1,
+      }).catch(error => {
+        console.error("Error adding report: ", error);
+        alert("حدث خطأ أثناء إرسال التقرير: " + error.message);
       });
     } catch (error) {
-      console.error("Error adding report: ", error);
-      alert("حدث خطأ أثناء إرسال التقرير");
+      console.error("Error preparing report data: ", error);
+      alert("حدث خطأ غير متوقع.");
     }
   };
 
