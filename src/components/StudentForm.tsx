@@ -24,7 +24,6 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
   const [hasReviewed, setHasReviewed] = useState(true);
   const [isAbsent, setIsAbsent] = useState(false);
   const [absenceReason, setAbsenceReason] = useState('');
-
   const [submitType, setSubmitType] = useState<'create' | 'update' | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -394,7 +393,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
                         <input
                           type="text"
                           required
-                          placeholder="مثال: عذر طبي، سفر، ظروف خاصة..."
+                          placeholder="مثال: إجازة، عذر طبي، سفر..."
                           value={absenceReason}
                           onChange={(e) => setAbsenceReason(e.target.value)}
                           className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-800 focus:ring-2 focus:ring-red-500 outline-none transition-all"
@@ -495,10 +494,9 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
                   onClick={() => {
                     setEditingReportId(null);
                     setStudentId('');
-                    setPages('');
+                    setPages(0);
                     setSurahs('');
                     setIsAbsent(false);
-                    setAbsenceReason('');
                   }}
                   className="w-full mt-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded-xl transition-all text-sm"
                 >
