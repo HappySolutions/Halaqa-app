@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Clipboard, Trash2, Users, Check, RefreshCcw, AlertTriangle, UserPlus, X } from 'lucide-react';
+import { Clipboard, Trash2, Users, Check, RefreshCcw, AlertTriangle, UserPlus, X, Eraser } from 'lucide-react';
 import { Report, Student, Halaqa } from '@/types';
 import { format, parseISO } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -54,6 +54,7 @@ export function AdminPanel({
   const [quickAbsenceReason, setQuickAbsenceReason] = useState('');
   const [quickLeaveDays, setQuickLeaveDays] = useState<number | string>('');
   const [isQuickSubmitting, setIsQuickSubmitting] = useState(false);
+  const isQuickSubmittingRef = useRef(false);
 
   // Set default selected halaqa
   React.useEffect(() => {
@@ -146,6 +147,45 @@ export function AdminPanel({
     setQuickAbsenceReason('');
     setQuickLeaveDays('');
     setIsQuickSubmitting(false);
+    isQuickSubmittingRef.current = false;
+  };
+
+  const handleCleanupDuplicates = () => {
+    if (!selectedHalaqaId) return;
+    if (!window.confirm("هل أنت متأكدة من رغبتك في مسح التكرارات؟ سيتم فحص السجلات النشطة وحذف المكرر لنفس الطالبة في نفس اليوم.")) return;
+    
+    const activeReports = reports.filter(r => !r.isDeleted && r.halaqaId === selectedHalaqaId);
+    
+    const groups: Record<string, Report[]> = {};
+    activeReports.forEach(r => {
+      const key = `${r.studentId}_${r.date}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(r);
+    });
+
+    let duplicateIdsToDelete: string[] = [];
+    Object.values(groups).forEach(group => {
+      if (group.length > 1) {
+        // Sort by timestamp descending (newest first)
+        group.sort((a, b) => b.timestamp - a.timestamp);
+        // Keep the first one, mark the rest for deletion
+        for (let i = 1; i < group.length; i++) {
+          duplicateIdsToDelete.push(group[i].id);
+        }
+      }
+    });
+
+    if (duplicateIdsToDelete.length === 0) {
+      alert("لا يوجد أي سجلات مكررة في الحلقة الحالية.");
+      return;
+    }
+
+    if (window.confirm(`تم العثور على ${duplicateIdsToDelete.length} سجل مكرر في قاعدة البيانات. هل تريدين حذفها نهائياً الآن؟`)) {
+      duplicateIdsToDelete.forEach(id => {
+        onPermanentDeleteReport(id);
+      });
+      alert("تم حذف التكرارات بنجاح.");
+    }
   };
 
   const openQuickRegister = (student: Student) => {
@@ -160,11 +200,12 @@ export function AdminPanel({
 
   const handleQuickRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!quickRegisterStudent || !selectedHalaqaId || isQuickSubmitting) return;
+    if (!quickRegisterStudent || !selectedHalaqaId || isQuickSubmitting || isQuickSubmittingRef.current) return;
 
     const currentHalaqa = halaqat.find(h => h.id === selectedHalaqaId);
     const effectiveDate = getEffectiveDateForHalaqa(currentHalaqa);
 
+    isQuickSubmittingRef.current = true;
     setIsQuickSubmitting(true);
 
     try {
@@ -173,6 +214,7 @@ export function AdminPanel({
         if (isNaN(days) || days <= 0) {
           alert('يرجى إدخال عدد أيام الإجازة بشكل صحيح (رقم أكبر من صفر)');
           setIsQuickSubmitting(false);
+          isQuickSubmittingRef.current = false;
           return;
         }
 
@@ -197,6 +239,7 @@ export function AdminPanel({
         if (!quickAbsenceReason.trim()) {
           alert('يرجى إدخال سبب الغياب');
           setIsQuickSubmitting(false);
+          isQuickSubmittingRef.current = false;
           return;
         }
         await onAddReport({
@@ -213,6 +256,7 @@ export function AdminPanel({
         if (!quickSurahs.trim() || quickPages === '' || quickPages === undefined) {
           alert('يرجى إدخال عدد الأوجه والسور المراجعة بشكل صحيح');
           setIsQuickSubmitting(false);
+          isQuickSubmittingRef.current = false;
           return;
         }
         await onAddReport({
@@ -227,8 +271,10 @@ export function AdminPanel({
         });
       }
       resetQuickRegisterForm();
+      isQuickSubmittingRef.current = false;
     } catch {
       setIsQuickSubmitting(false);
+      isQuickSubmittingRef.current = false;
       alert('حدث خطأ أثناء التسجيل، يرجى المحاولة مرة أخرى.');
     }
   };
@@ -363,6 +409,13 @@ export function AdminPanel({
                 title="إعادة تسلسل الأرقام"
               >
                 <RefreshCcw className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleCleanupDuplicates}
+                className="p-2 text-slate-300 hover:text-amber-500 transition-all"
+                title="تنظيف التكرارات المزدوجة"
+              >
+                <Eraser className="w-4 h-4" />
               </button>
               {/* <button
                 onClick={() => {

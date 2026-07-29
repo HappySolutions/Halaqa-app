@@ -25,6 +25,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
   const [isAbsent, setIsAbsent] = useState(false);
   const [absenceReason, setAbsenceReason] = useState('');
   const [submitType, setSubmitType] = useState<'create' | 'update' | null>(null);
+  const isSubmittingRef = useRef(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -126,10 +127,12 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!studentId || isTimeRestricted || !selectedHalaqaId) return;
+    if (isSubmittingRef.current || !studentId || isTimeRestricted || !selectedHalaqaId) return;
     if (isDuplicate && !editingReportId) return;
     if (!isAbsent && (!surahs || !surahs.trim())) return;
     if (!isAbsent && (pages === '' || pages === undefined)) return;
+
+    isSubmittingRef.current = true;
 
     const reportData = {
       studentId,
@@ -160,6 +163,7 @@ export function StudentForm({ students, reports, halaqat, onSubmit, onUpdate }: 
       setSurahs('');
       setIsAbsent(false);
       setAbsenceReason('');
+      isSubmittingRef.current = false;
     }, 3000);
   };
 
