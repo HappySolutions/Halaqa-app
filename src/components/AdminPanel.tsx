@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { Clipboard, Trash2, Users, Check, RefreshCcw, AlertTriangle, UserPlus, X, Eraser } from 'lucide-react';
 import { Report, Student, Halaqa } from '@/types';
 import { format, parseISO } from 'date-fns';
