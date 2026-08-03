@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef } from 'react';
-import { Clipboard, Trash2, Users, Check, RefreshCcw, AlertTriangle, UserPlus, X, Eraser } from 'lucide-react';
+import { Clipboard, Trash2, Users, Check, RefreshCcw, AlertTriangle, UserPlus, X, Eraser, CalendarOff } from 'lucide-react';
 import { Report, Student, Halaqa } from '@/types';
 import { format, parseISO } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -91,6 +91,41 @@ export function AdminPanel({
     return reports
       .filter(r => r.halaqaId === selectedHalaqaId && r.isDeferred && r.date !== effectiveDate && !r.isDeleted)
       .sort((a, b) => b.timestamp - a.timestamp);
+  }, [reports, selectedHalaqaId, halaqat]);
+
+  // Leave reports: students who have future leave entries (absenceReason contains 'إجازة')
+  const leaveReports = useMemo(() => {
+    const currentHalaqa = halaqat.find(h => h.id === selectedHalaqaId);
+    if (!currentHalaqa) return [];
+    const effectiveDate = getEffectiveDateForHalaqa(currentHalaqa);
+
+    // Find all active leave reports for today and future dates
+    const allLeaveReports = reports.filter(r =>
+      r.halaqaId === selectedHalaqaId &&
+      !r.isDeleted &&
+      r.isAbsent &&
+      r.absenceReason?.includes('إجازة') &&
+      r.date >= effectiveDate
+    );
+
+    // Group by student, showing unique students with their leave details
+    const studentLeaveMap = new Map<string, { studentId: string; studentName: string; reportIds: string[]; dates: string[]; reason: string }>();
+    allLeaveReports.forEach(r => {
+      if (!studentLeaveMap.has(r.studentId)) {
+        studentLeaveMap.set(r.studentId, {
+          studentId: r.studentId,
+          studentName: r.studentName,
+          reportIds: [],
+          dates: [],
+          reason: r.absenceReason || 'إجازة',
+        });
+      }
+      const entry = studentLeaveMap.get(r.studentId)!;
+      entry.reportIds.push(r.id);
+      entry.dates.push(r.date);
+    });
+
+    return Array.from(studentLeaveMap.values()).sort((a, b) => a.studentName.localeCompare(b.studentName, 'ar'));
   }, [reports, selectedHalaqaId, halaqat]);
 
   const remainingStudents = useMemo(() => {
@@ -186,6 +221,13 @@ export function AdminPanel({
       });
       alert("تم حذف التكرارات بنجاح.");
     }
+  };
+
+  const handleCancelLeave = (studentId: string, studentName: string, reportIds: string[]) => {
+    if (!window.confirm(`هل أنتِ متأكدة من إلغاء إجازة الطالبة ${studentName}؟\nسيتم حذف ${reportIds.length} سجل إجازة (اليوم والأيام القادمة) نهائياً.`)) return;
+    reportIds.forEach(id => {
+      onPermanentDeleteReport(id);
+    });
   };
 
   const openQuickRegister = (student: Student) => {
@@ -616,6 +658,34 @@ export function AdminPanel({
                         حذف
                       </button>
                     </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {leaveReports.length > 0 && (
+            <div className="mt-8 border-t border-slate-200 pt-6">
+              <h4 className="text-sm font-bold text-blue-600 mb-4 flex items-center gap-2">
+                <CalendarOff className="w-4 h-4" />
+                الطالبات في إجازة ({leaveReports.length})
+              </h4>
+              <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                {leaveReports.map(leave => (
+                  <div key={leave.studentId} className="flex items-center justify-between p-2.5 bg-blue-50/60 border border-blue-100/70 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-blue-800">{leave.studentName}</span>
+                      <span className="text-[10px] text-blue-600 bg-blue-100/50 px-1.5 py-0.5 rounded font-medium">
+                        {leave.reason} - {leave.reportIds.length} يوم متبقي
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => handleCancelLeave(leave.studentId, leave.studentName, leave.reportIds)}
+                      className="text-[10px] bg-white hover:bg-red-600 hover:text-white border border-red-200 text-red-600 px-2.5 py-1 rounded-lg transition-all font-bold shadow-sm"
+                      title="إلغاء الإجازة وحذف جميع سجلات الإجازة المستقبلية"
+                    >
+                      إلغاء الإجازة
+                    </button>
                   </div>
                 ))}
               </div>
